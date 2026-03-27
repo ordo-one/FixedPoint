@@ -537,7 +537,25 @@ struct ConversionTests {
         #expect(result == nil)
     }
 
-    // MARK: - FixedWidthInteger init?(exactly: FixedPointDecimal)
+    // MARK: - Concrete Int/Int64/Int32 init?(exactly: FixedPointDecimal)
+
+    @Test("Int(exactly:) succeeds for exact integers")
+    func intExactlySucceeds() {
+        #expect(Int(exactly: FixedPointDecimal(42)) == 42)
+        #expect(Int(exactly: FixedPointDecimal(0)) == 0)
+        #expect(Int(exactly: FixedPointDecimal(-99)) == -99)
+    }
+
+    @Test("Int(exactly:) returns nil for fractional values")
+    func intExactlyFractional() {
+        #expect(Int(exactly: FixedPointDecimal(42.5)) == nil)
+        #expect(Int(exactly: FixedPointDecimal(0.00000001)) == nil)
+    }
+
+    @Test("Int(exactly:) returns nil for NaN")
+    func intExactlyNaN() {
+        #expect(Int(exactly: FixedPointDecimal.nan) == nil)
+    }
 
     @Test("Int64(exactly:) succeeds for exact integers")
     func int64ExactlySucceeds() {
@@ -563,10 +581,22 @@ struct ConversionTests {
         #expect(Int32(exactly: FixedPointDecimal(-1000)) == -1000)
     }
 
+    @Test("Int32(exactly:) returns nil for fractional values")
+    func int32ExactlyFractional() {
+        #expect(Int32(exactly: FixedPointDecimal(1.5)) == nil)
+    }
+
     @Test("Int32(exactly:) returns nil for out-of-range integers")
     func int32ExactlyOutOfRange() {
         #expect(Int32(exactly: FixedPointDecimal(Int64(Int32.max) + 1)) == nil)
     }
+
+    @Test("Int32(exactly:) returns nil for NaN")
+    func int32ExactlyNaN() {
+        #expect(Int32(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    // MARK: - FixedWidthInteger generic init?(exactly: FixedPointDecimal)
 
     @Test("Int16(exactly:) returns nil for NaN")
     func int16ExactlyNaN() {
