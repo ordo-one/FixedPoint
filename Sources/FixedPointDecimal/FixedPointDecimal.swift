@@ -200,7 +200,6 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// ```swift
     /// let missing: FixedPointDecimal = .nan
     /// missing.isNaN  // true
-    /// (missing + FixedPointDecimal(1)).isNaN  // true (NaN propagates)
     /// ```
     @inlinable
     public static var nan: FixedPointDecimal {

@@ -35,6 +35,20 @@ struct PreconditionTests {
         }
     }
 
+    @Test("init(significand:exponent:) traps on out-of-range shift")
+    func initSignificandExponentOutOfRange() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(significand: 1, exponent: 100)
+        }
+    }
+
+    @Test("init(significand:exponent:) traps on overflow")
+    func initSignificandExponentOverflow() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(significand: Int(Int64.max), exponent: 1)
+        }
+    }
+
     @Test("init(_ Double) traps on Double.nan")
     func initDoubleNaN() async {
         await #expect(processExitsWith: .failure) {
