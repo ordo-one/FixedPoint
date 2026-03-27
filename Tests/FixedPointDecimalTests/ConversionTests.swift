@@ -537,6 +537,69 @@ struct ConversionTests {
         #expect(result == nil)
     }
 
+    // MARK: - FixedWidthInteger init?(exactly: FixedPointDecimal)
+
+    @Test("Int64(exactly:) succeeds for exact integers")
+    func int64ExactlySucceeds() {
+        #expect(Int64(exactly: FixedPointDecimal(42)) == 42)
+        #expect(Int64(exactly: FixedPointDecimal(0)) == 0)
+        #expect(Int64(exactly: FixedPointDecimal(-99)) == -99)
+    }
+
+    @Test("Int64(exactly:) returns nil for fractional values")
+    func int64ExactlyFractional() {
+        #expect(Int64(exactly: FixedPointDecimal(42.5)) == nil)
+        #expect(Int64(exactly: FixedPointDecimal(0.00000001)) == nil)
+    }
+
+    @Test("Int64(exactly:) returns nil for NaN")
+    func int64ExactlyNaN() {
+        #expect(Int64(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("Int32(exactly:) succeeds for in-range integers")
+    func int32ExactlySucceeds() {
+        #expect(Int32(exactly: FixedPointDecimal(1000)) == 1000)
+        #expect(Int32(exactly: FixedPointDecimal(-1000)) == -1000)
+    }
+
+    @Test("Int32(exactly:) returns nil for out-of-range integers")
+    func int32ExactlyOutOfRange() {
+        #expect(Int32(exactly: FixedPointDecimal(Int64(Int32.max) + 1)) == nil)
+    }
+
+    @Test("Int16(exactly:) returns nil for NaN")
+    func int16ExactlyNaN() {
+        #expect(Int16(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("UInt64(exactly:) succeeds for non-negative integers")
+    func uint64ExactlySucceeds() {
+        #expect(UInt64(exactly: FixedPointDecimal(42)) == 42)
+        #expect(UInt64(exactly: FixedPointDecimal(0)) == 0)
+    }
+
+    @Test("UInt64(exactly:) returns nil for negative values")
+    func uint64ExactlyNegative() {
+        #expect(UInt64(exactly: FixedPointDecimal(-1)) == nil)
+    }
+
+    @Test("UInt64(exactly:) returns nil for fractional values")
+    func uint64ExactlyFractional() {
+        #expect(UInt64(exactly: FixedPointDecimal(1.5)) == nil)
+    }
+
+    @Test("UInt64(exactly:) returns nil for NaN")
+    func uint64ExactlyNaN() {
+        #expect(UInt64(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("UInt16(exactly:) returns nil for out-of-range values")
+    func uint16ExactlyOutOfRange() {
+        #expect(UInt16(exactly: FixedPointDecimal(Int64(UInt16.max) + 1)) == nil)
+        #expect(UInt16(exactly: FixedPointDecimal(-1)) == nil)
+    }
+
     @Test("FPD negation matches Decimal negation")
     func negationParityWithDecimal() {
         let values = ["0", "1", "-1", "123.45", "-99.99", "0.00000001"]
