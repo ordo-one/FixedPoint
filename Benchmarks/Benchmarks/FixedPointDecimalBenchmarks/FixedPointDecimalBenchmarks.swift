@@ -312,6 +312,30 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
+    // MARK: - pow(10, n) vs pow(x, n)
+
+    Benchmark("FixedPointDecimal pow(10, n)", configuration: defaultConfiguration) { benchmark in
+        let ten: FixedPointDecimal = 10
+        let exponents = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        var i = 0
+
+        for _ in benchmark.scaledIterations {
+            blackHole(FixedPointDecimal.pow(ten, exponents[i % exponents.count]))
+            i &+= 1
+        }
+    }
+
+    Benchmark("FixedPointDecimal pow(2, n)", configuration: defaultConfiguration) { benchmark in
+        let two: FixedPointDecimal = 2
+        let exponents = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        var i = 0
+
+        for _ in benchmark.scaledIterations {
+            blackHole(FixedPointDecimal.pow(two, exponents[i % exponents.count]))
+            i &+= 1
+        }
+    }
+
     // MARK: - Construction: from Double
 
     Benchmark("FixedPointDecimal init(Double)", configuration: defaultConfiguration) { benchmark in

@@ -181,7 +181,71 @@ struct PowTests {
     func significandExponentPrecisionLoss() {
         // exponent -10 means shift = 8 + (-10) = -2, so divide by 100
         // 12345 / 100 = 123 (truncated) → 0.00000123
-        let v = FixedPointDecimal(significand: 12345, exponent: -10)
-        #expect(v == FixedPointDecimal(rawValue: 123))
+        let value = FixedPointDecimal(significand: 12345, exponent: -10)
+        #expect(value == FixedPointDecimal(rawValue: 123))
+    }
+
+    // MARK: - pow(10, n) fast path
+
+    @Test("pow(10, n) positive exponents via lookup table")
+    func pow10Positive() {
+        let ten: FixedPointDecimal = 10
+        #expect(FixedPointDecimal.pow(ten, 0) == 1)
+        #expect(FixedPointDecimal.pow(ten, 1) == 10)
+        #expect(FixedPointDecimal.pow(ten, 2) == 100)
+        #expect(FixedPointDecimal.pow(ten, 3) == 1000)
+        #expect(FixedPointDecimal.pow(ten, 4) == 10000)
+        #expect(FixedPointDecimal.pow(ten, 5) == 100000)
+        #expect(FixedPointDecimal.pow(ten, 6) == 1000000)
+        #expect(FixedPointDecimal.pow(ten, 7) == 10000000)
+        #expect(FixedPointDecimal.pow(ten, 8) == 100000000)
+        #expect(FixedPointDecimal.pow(ten, 9) == 1000000000)
+        #expect(FixedPointDecimal.pow(ten, 10) == 10000000000)
+    }
+
+    @Test("pow(10, n) negative exponents via lookup table")
+    func pow10Negative() {
+        let ten: FixedPointDecimal = 10
+        #expect(FixedPointDecimal.pow(ten, -1) == 0.1)
+        #expect(FixedPointDecimal.pow(ten, -2) == 0.01)
+        #expect(FixedPointDecimal.pow(ten, -3) == 0.001)
+        #expect(FixedPointDecimal.pow(ten, -4) == 0.0001)
+        #expect(FixedPointDecimal.pow(ten, -5) == 0.00001)
+        #expect(FixedPointDecimal.pow(ten, -6) == 0.000001)
+        #expect(FixedPointDecimal.pow(ten, -7) == 0.0000001)
+        #expect(FixedPointDecimal.pow(ten, -8) == 0.00000001)
+    }
+
+    @Test("pow(10, -9) below representable precision returns zero")
+    func pow10BelowPrecision() {
+        let ten: FixedPointDecimal = 10
+        #expect(FixedPointDecimal.pow(ten, -9) == .zero)
+    }
+
+    @Test("pow(10, 11) overflows returns NaN")
+    func pow10Overflow() {
+        let ten: FixedPointDecimal = 10
+        #expect(FixedPointDecimal.pow(ten, 11).isNaN)
+    }
+
+    @Test("pow(10, n) fast path matches general path for all valid exponents")
+    func pow10MatchesGeneral() {
+        let ten: FixedPointDecimal = 10
+        for exponent in -8...10 {
+            let fast = FixedPointDecimal.pow(ten, exponent)
+            if exponent >= 0 {
+                var manual: FixedPointDecimal = 1
+                for _ in 0..<exponent {
+                    let (product, _) = manual.multipliedReportingOverflow(by: ten)
+                    manual = product
+                }
+                #expect(fast == manual, "pow(10, \(exponent)): fast=\(fast) manual=\(manual)")
+            } else {
+                let positive = FixedPointDecimal.pow(ten, -exponent)
+                let one: FixedPointDecimal = 1
+                let (manual, _) = one.dividedReportingOverflow(by: positive)
+                #expect(fast == manual, "pow(10, \(exponent)): fast=\(fast) manual=\(manual)")
+            }
+        }
     }
 }
