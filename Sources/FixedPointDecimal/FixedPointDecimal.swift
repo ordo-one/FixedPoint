@@ -415,6 +415,15 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
         if n == 0 { return FixedPointDecimal(rawValue: scaleFactor) } // 1
         if n == 1 { return x }
 
+        // Fast path: pow(10, n) via lookup table — O(1) instead of n-1 multiplications.
+        if x._storage == 10 &* scaleFactor {
+            let shift = fractionalDigitCount + n
+            if shift >= 0, shift < _pow10Table.count {
+                return FixedPointDecimal(rawValue: _pow10Table[shift])
+            }
+            return shift < 0 ? .zero : .nan
+        }
+
         if n < 0 {
             let positive = pow(x, -n)
             if positive.isNaN || positive == .zero { return .nan }
