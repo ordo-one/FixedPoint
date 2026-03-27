@@ -1,0 +1,6 @@
+fuzz-fixedpointdecimal
+corpus/
+crash-*
+leak-*
+timeout-*
+oom-*
