@@ -28,8 +28,8 @@ extension FixedPointDecimal {
 extension FixedPointDecimal {
     /// Returns the sum of two values.
     ///
-    /// If either operand is NaN, the result is NaN.
-    /// Traps on overflow, matching Swift `Int` behavior.
+    /// Traps if either operand is NaN or if the result overflows,
+    /// matching Swift `Int` behavior.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.5"
@@ -41,10 +41,11 @@ extension FixedPointDecimal {
     ///   - lhs: The first addend.
     ///   - rhs: The second addend.
     /// - Returns: The sum of `lhs` and `rhs`.
+    /// - Precondition: Neither operand may be NaN.
     /// - Precondition: The result must fit in `Int64` after scaling.
     @inlinable
     public static func + (lhs: Self, rhs: Self) -> Self {
-        if lhs.isNaN || rhs.isNaN { return .nan }
+        precondition(!lhs.isNaN && !rhs.isNaN, "NaN in FixedPointDecimal addition")
         let (result, overflow) = lhs._storage.addingReportingOverflow(rhs._storage)
         precondition(!overflow, "FixedPointDecimal addition overflow")
         precondition(result != .min, "FixedPointDecimal addition produced NaN sentinel")
@@ -53,7 +54,7 @@ extension FixedPointDecimal {
 
     /// Adds the right-hand value to the left-hand value in place.
     ///
-    /// Traps on overflow. Propagates NaN.
+    /// Traps on overflow or NaN.
     ///
     /// ```swift
     /// var total: FixedPointDecimal = "100.0"
@@ -71,8 +72,8 @@ extension FixedPointDecimal {
 
     /// Returns the difference of two values.
     ///
-    /// If either operand is NaN, the result is NaN.
-    /// Traps on overflow, matching Swift `Int` behavior.
+    /// Traps if either operand is NaN or if the result overflows,
+    /// matching Swift `Int` behavior.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.5"
@@ -84,10 +85,11 @@ extension FixedPointDecimal {
     ///   - lhs: The minuend.
     ///   - rhs: The subtrahend.
     /// - Returns: The difference of `lhs` and `rhs`.
+    /// - Precondition: Neither operand may be NaN.
     /// - Precondition: The result must fit in `Int64` after scaling.
     @inlinable
     public static func - (lhs: Self, rhs: Self) -> Self {
-        if lhs.isNaN || rhs.isNaN { return .nan }
+        precondition(!lhs.isNaN && !rhs.isNaN, "NaN in FixedPointDecimal subtraction")
         let (result, overflow) = lhs._storage.subtractingReportingOverflow(rhs._storage)
         precondition(!overflow, "FixedPointDecimal subtraction overflow")
         precondition(result != .min, "FixedPointDecimal subtraction produced NaN sentinel")
@@ -96,7 +98,7 @@ extension FixedPointDecimal {
 
     /// Subtracts the right-hand value from the left-hand value in place.
     ///
-    /// Traps on overflow. Propagates NaN.
+    /// Traps on overflow or NaN.
     ///
     /// ```swift
     /// var balance: FixedPointDecimal = "100.0"
@@ -117,7 +119,7 @@ extension FixedPointDecimal {
     /// Uses `Int128` intermediate arithmetic to prevent precision loss during
     /// the multiply-then-divide-by-scale-factor operation. The result is
     /// rounded using banker's rounding (round half to even). If either operand
-    /// is NaN, the result is NaN. Traps if the final result does not fit in
+    /// Traps if either operand is NaN or if the final result does not fit in
     /// `Int64`.
     ///
     /// ```swift
@@ -130,10 +132,11 @@ extension FixedPointDecimal {
     ///   - lhs: The first factor.
     ///   - rhs: The second factor.
     /// - Returns: The product of `lhs` and `rhs`.
+    /// - Precondition: Neither operand may be NaN.
     /// - Precondition: The result must fit in `Int64` after scaling.
     @inlinable
     public static func * (lhs: Self, rhs: Self) -> Self {
-        if lhs.isNaN || rhs.isNaN { return .nan }
+        precondition(!lhs.isNaN && !rhs.isNaN, "NaN in FixedPointDecimal multiplication")
         let wide = Int128(lhs._storage) * Int128(rhs._storage)
         let scaled = _bankersDiv(wide, Int128(scaleFactor))
         precondition(scaled > Int128(Int64.min) && scaled <= Int128(Int64.max),
@@ -143,7 +146,7 @@ extension FixedPointDecimal {
 
     /// Multiplies the left-hand value by the right-hand value in place.
     ///
-    /// Traps on overflow. Propagates NaN.
+    /// Traps on overflow or NaN.
     ///
     /// - Parameters:
     ///   - lhs: The value to modify.
@@ -157,7 +160,7 @@ extension FixedPointDecimal {
     ///
     /// Uses `Int128` intermediate arithmetic for precision. The result is
     /// rounded using banker's rounding (round half to even). If either operand
-    /// is NaN, the result is NaN. Traps on division by zero or if the result
+    /// Traps if either operand is NaN, on division by zero, or if the result
     /// does not fit in `Int64`.
     ///
     /// ```swift
@@ -170,11 +173,12 @@ extension FixedPointDecimal {
     ///   - lhs: The dividend.
     ///   - rhs: The divisor.
     /// - Returns: The quotient of `lhs` divided by `rhs`.
+    /// - Precondition: Neither operand may be NaN.
     /// - Precondition: `rhs` must not be zero.
     /// - Precondition: The result must fit in `Int64` after scaling.
     @inlinable
     public static func / (lhs: Self, rhs: Self) -> Self {
-        if lhs.isNaN || rhs.isNaN { return .nan }
+        precondition(!lhs.isNaN && !rhs.isNaN, "NaN in FixedPointDecimal division")
         precondition(rhs._storage != 0, "Division by zero")
         let wide = Int128(lhs._storage) * Int128(scaleFactor)
         let result = _bankersDiv(wide, Int128(rhs._storage))
@@ -185,7 +189,7 @@ extension FixedPointDecimal {
 
     /// Divides the left-hand value by the right-hand value in place.
     ///
-    /// Traps on division by zero or overflow. Propagates NaN.
+    /// Traps on division by zero, overflow, or NaN.
     ///
     /// - Parameters:
     ///   - lhs: The value to modify.
@@ -212,7 +216,7 @@ extension FixedPointDecimal {
     /// Returns the remainder of dividing the first value by the second.
     ///
     /// The sign of the result matches the sign of the dividend (`lhs`).
-    /// If either operand is NaN, the result is NaN.
+    /// Traps if either operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.0"
@@ -224,17 +228,18 @@ extension FixedPointDecimal {
     ///   - lhs: The dividend.
     ///   - rhs: The divisor.
     /// - Returns: The remainder of `lhs` divided by `rhs`.
+    /// - Precondition: Neither operand may be NaN.
     /// - Precondition: `rhs` must not be zero.
     @inlinable
     public static func % (lhs: Self, rhs: Self) -> Self {
-        if lhs.isNaN || rhs.isNaN { return .nan }
+        precondition(!lhs.isNaN && !rhs.isNaN, "NaN in FixedPointDecimal remainder")
         precondition(rhs._storage != 0, "Division by zero in remainder")
         return Self(rawValue: lhs._storage % rhs._storage)
     }
 
     /// Divides the left-hand value by the right-hand value and stores the remainder in place.
     ///
-    /// Propagates NaN.
+    /// Traps on NaN.
     ///
     /// - Parameters:
     ///   - lhs: The value to modify.

@@ -71,7 +71,7 @@ extension FixedPointDecimal {
     /// Returns the sum of this value and the given value, along with a Boolean
     /// indicating whether overflow occurred in the operation.
     ///
-    /// If either operand is NaN, the result is `(.nan, false)`.
+    /// Traps if either operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "50.0"
@@ -82,9 +82,10 @@ extension FixedPointDecimal {
     ///
     /// - Parameter other: The value to add.
     /// - Returns: A tuple containing the partial sum and a Boolean overflow flag.
+    /// - Precondition: Neither operand may be NaN.
     @inlinable
     public func addingReportingOverflow(_ other: Self) -> (partialValue: Self, overflow: Bool) {
-        if isNaN || other.isNaN { return (.nan, false) }
+        precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal addition")
         let (result, overflow) = _storage.addingReportingOverflow(other._storage)
         return (Self(rawValue: result), overflow || result == .min)
     }
@@ -92,7 +93,7 @@ extension FixedPointDecimal {
     /// Returns the difference of this value and the given value, along with a
     /// Boolean indicating whether overflow occurred in the operation.
     ///
-    /// If either operand is NaN, the result is `(.nan, false)`.
+    /// Traps if either operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "50.0"
@@ -103,9 +104,10 @@ extension FixedPointDecimal {
     ///
     /// - Parameter other: The value to subtract.
     /// - Returns: A tuple containing the partial difference and a Boolean overflow flag.
+    /// - Precondition: Neither operand may be NaN.
     @inlinable
     public func subtractingReportingOverflow(_ other: Self) -> (partialValue: Self, overflow: Bool) {
-        if isNaN || other.isNaN { return (.nan, false) }
+        precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal subtraction")
         let (result, overflow) = _storage.subtractingReportingOverflow(other._storage)
         return (Self(rawValue: result), overflow || result == .min)
     }
@@ -114,7 +116,7 @@ extension FixedPointDecimal {
     /// indicating whether overflow occurred in the operation.
     ///
     /// Uses `Int128` intermediate arithmetic. Overflow is reported when the scaled
-    /// result exceeds `Int64` range. If either operand is NaN, the result is `(.nan, false)`.
+    /// result exceeds `Int64` range. Traps if either operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.0"
@@ -125,9 +127,10 @@ extension FixedPointDecimal {
     ///
     /// - Parameter other: The value to multiply by.
     /// - Returns: A tuple containing the partial product and a Boolean overflow flag.
+    /// - Precondition: Neither operand may be NaN.
     @inlinable
     public func multipliedReportingOverflow(by other: Self) -> (partialValue: Self, overflow: Bool) {
-        if isNaN || other.isNaN { return (.nan, false) }
+        precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal multiplication")
         let wide = Int128(_storage) * Int128(other._storage)
         let scaled = Self._bankersDiv(wide, Int128(Self.scaleFactor))
         let fits = scaled > Int128(Int64.min) && scaled <= Int128(Int64.max)
@@ -139,7 +142,7 @@ extension FixedPointDecimal {
     /// a Boolean indicating whether overflow occurred in the operation.
     ///
     /// Overflow is reported for division by zero or when the result exceeds
-    /// `Int64` range. If either operand is NaN, the result is `(.nan, false)`.
+    /// `Int64` range. Traps if either operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "100.0"
@@ -153,9 +156,10 @@ extension FixedPointDecimal {
     ///
     /// - Parameter other: The value to divide by.
     /// - Returns: A tuple containing the partial quotient and a Boolean overflow flag.
+    /// - Precondition: Neither operand may be NaN.
     @inlinable
     public func dividedReportingOverflow(by other: Self) -> (partialValue: Self, overflow: Bool) {
-        if isNaN || other.isNaN { return (.nan, false) }
+        precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal division")
         guard other._storage != 0 else {
             return (.zero, true)
         }

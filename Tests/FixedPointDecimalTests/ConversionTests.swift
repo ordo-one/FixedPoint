@@ -207,9 +207,9 @@ struct ConversionTests {
         #expect(value.magnitude == 42.5 as FixedPointDecimal)
     }
 
-    @Test("Numeric magnitude for NaN is NaN")
-    func magnitudeNaN() {
-        #expect(FixedPointDecimal.nan.magnitude.isNaN)
+    @Test("Numeric magnitude for NaN traps")
+    func magnitudeNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.magnitude }
     }
 
     @Test("Numeric magnitude for zero")
@@ -535,6 +535,99 @@ struct ConversionTests {
     func exactDoubleSignalingNaN() {
         let result = FixedPointDecimal(exactly: Double.signalingNaN)
         #expect(result == nil)
+    }
+
+    // MARK: - Concrete Int/Int64/Int32 init?(exactly: FixedPointDecimal)
+
+    @Test("Int(exactly:) succeeds for exact integers")
+    func intExactlySucceeds() {
+        #expect(Int(exactly: FixedPointDecimal(42)) == 42)
+        #expect(Int(exactly: FixedPointDecimal(0)) == 0)
+        #expect(Int(exactly: FixedPointDecimal(-99)) == -99)
+    }
+
+    @Test("Int(exactly:) returns nil for fractional values")
+    func intExactlyFractional() {
+        #expect(Int(exactly: FixedPointDecimal(42.5)) == nil)
+        #expect(Int(exactly: FixedPointDecimal(0.00000001)) == nil)
+    }
+
+    @Test("Int(exactly:) returns nil for NaN")
+    func intExactlyNaN() {
+        #expect(Int(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("Int64(exactly:) succeeds for exact integers")
+    func int64ExactlySucceeds() {
+        #expect(Int64(exactly: FixedPointDecimal(42)) == 42)
+        #expect(Int64(exactly: FixedPointDecimal(0)) == 0)
+        #expect(Int64(exactly: FixedPointDecimal(-99)) == -99)
+    }
+
+    @Test("Int64(exactly:) returns nil for fractional values")
+    func int64ExactlyFractional() {
+        #expect(Int64(exactly: FixedPointDecimal(42.5)) == nil)
+        #expect(Int64(exactly: FixedPointDecimal(0.00000001)) == nil)
+    }
+
+    @Test("Int64(exactly:) returns nil for NaN")
+    func int64ExactlyNaN() {
+        #expect(Int64(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("Int32(exactly:) succeeds for in-range integers")
+    func int32ExactlySucceeds() {
+        #expect(Int32(exactly: FixedPointDecimal(1000)) == 1000)
+        #expect(Int32(exactly: FixedPointDecimal(-1000)) == -1000)
+    }
+
+    @Test("Int32(exactly:) returns nil for fractional values")
+    func int32ExactlyFractional() {
+        #expect(Int32(exactly: FixedPointDecimal(1.5)) == nil)
+    }
+
+    @Test("Int32(exactly:) returns nil for out-of-range integers")
+    func int32ExactlyOutOfRange() {
+        #expect(Int32(exactly: FixedPointDecimal(Int64(Int32.max) + 1)) == nil)
+    }
+
+    @Test("Int32(exactly:) returns nil for NaN")
+    func int32ExactlyNaN() {
+        #expect(Int32(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    // MARK: - FixedWidthInteger generic init?(exactly: FixedPointDecimal)
+
+    @Test("Int16(exactly:) returns nil for NaN")
+    func int16ExactlyNaN() {
+        #expect(Int16(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("UInt64(exactly:) succeeds for non-negative integers")
+    func uint64ExactlySucceeds() {
+        #expect(UInt64(exactly: FixedPointDecimal(42)) == 42)
+        #expect(UInt64(exactly: FixedPointDecimal(0)) == 0)
+    }
+
+    @Test("UInt64(exactly:) returns nil for negative values")
+    func uint64ExactlyNegative() {
+        #expect(UInt64(exactly: FixedPointDecimal(-1)) == nil)
+    }
+
+    @Test("UInt64(exactly:) returns nil for fractional values")
+    func uint64ExactlyFractional() {
+        #expect(UInt64(exactly: FixedPointDecimal(1.5)) == nil)
+    }
+
+    @Test("UInt64(exactly:) returns nil for NaN")
+    func uint64ExactlyNaN() {
+        #expect(UInt64(exactly: FixedPointDecimal.nan) == nil)
+    }
+
+    @Test("UInt16(exactly:) returns nil for out-of-range values")
+    func uint16ExactlyOutOfRange() {
+        #expect(UInt16(exactly: FixedPointDecimal(Int64(UInt16.max) + 1)) == nil)
+        #expect(UInt16(exactly: FixedPointDecimal(-1)) == nil)
     }
 
     @Test("FPD negation matches Decimal negation")

@@ -330,13 +330,11 @@ struct PropertyTests {
             // Test addition
             let (addResult, addOvf) = a.addingReportingOverflow(b)
             if !addOvf {
-                #expect(!addResult.isNaN || a.isNaN || b.isNaN,
+                #expect(!addResult.isNaN,
                         "Non-overflow add produced NaN for \(a)+\(b)")
-                if !a.isNaN && !b.isNaN {
-                    let decSum = Self.toDecimal(a) + Self.toDecimal(b)
-                    #expect(Decimal(addResult) == decSum,
-                            "Add overflow detection: \(a)+\(b)")
-                }
+                let decSum = Self.toDecimal(a) + Self.toDecimal(b)
+                #expect(Decimal(addResult) == decSum,
+                        "Add overflow detection: \(a)+\(b)")
             }
 
             valid += 1

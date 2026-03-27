@@ -25,16 +25,16 @@ extension FixedPointDecimal {
 
     /// The absolute value of this instance.
     ///
-    /// Returns NaN for NaN, matching `Double.nan.magnitude` behavior.
+    /// Traps on NaN.
     ///
     /// ```swift
     /// let v = FixedPointDecimal("-5.0")!
     /// v.magnitude  // 5.0
-    /// FixedPointDecimal.nan.magnitude.isNaN  // true
     /// ```
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public var magnitude: Magnitude {
-        if isNaN { return .nan }
+        precondition(!isNaN, "magnitude called on NaN")
         return FixedPointDecimal(rawValue: abs(_storage))
     }
 
@@ -63,35 +63,35 @@ extension FixedPointDecimal {
 
     /// Returns the additive inverse of this value.
     ///
-    /// Returns NaN if the operand is NaN, matching the behavior of all
-    /// arithmetic operators on this type.
+    /// Traps if the operand is NaN.
     ///
     /// ```swift
     /// let price = FixedPointDecimal("42.5")!
     /// let neg = -price  // -42.5
-    /// (-FixedPointDecimal.nan).isNaN  // true
     /// ```
     ///
     /// - Parameter operand: The value to negate.
-    /// - Returns: The negated value, or NaN if the operand is NaN.
+    /// - Returns: The negated value.
+    /// - Precondition: The operand must not be NaN.
     @inlinable
     public prefix static func - (operand: Self) -> Self {
-        if operand.isNaN { return .nan }
+        precondition(!operand.isNaN, "NaN in FixedPointDecimal negation")
         return Self(rawValue: -operand._storage)
     }
 
     /// Replaces this value with its additive inverse.
     ///
-    /// If the value is NaN, this is a no-op (NaN is preserved).
+    /// Traps if the value is NaN.
     ///
     /// ```swift
     /// var price = FixedPointDecimal("42.5")!
     /// price.negate()
     /// // price is now -42.5
     /// ```
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public mutating func negate() {
-        if isNaN { return }
+        precondition(!isNaN, "NaN in FixedPointDecimal negation")
         _storage = -_storage
     }
 }

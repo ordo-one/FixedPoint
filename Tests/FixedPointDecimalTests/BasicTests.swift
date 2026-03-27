@@ -89,6 +89,26 @@ struct BasicTests {
         #expect(FixedPointDecimal.min.rawValue == Int64.min + 1)
         #expect(FixedPointDecimal.leastNonzeroMagnitude.rawValue == 1)
         #expect(FixedPointDecimal.greatestFiniteMagnitude.rawValue == Int64.max)
+        #expect(FixedPointDecimal.leastFiniteMagnitude == .min)
+    }
+
+    @Test("isFinite returns true for non-NaN, false for NaN")
+    func isFinite() {
+        #expect(FixedPointDecimal.zero.isFinite)
+        #expect(FixedPointDecimal(42).isFinite)
+        #expect(FixedPointDecimal(-1).isFinite)
+        #expect(FixedPointDecimal.max.isFinite)
+        #expect(FixedPointDecimal.min.isFinite)
+        #expect(!FixedPointDecimal.nan.isFinite)
+    }
+
+    @Test("sign returns .plus for positive/zero/NaN, .minus for negative")
+    func sign() {
+        #expect(FixedPointDecimal(42).sign == .plus)
+        #expect(FixedPointDecimal.zero.sign == .plus)
+        #expect(FixedPointDecimal(-42).sign == .minus)
+        #expect(FixedPointDecimal.min.sign == .minus)
+        #expect(FixedPointDecimal.nan.sign == .plus)
     }
 
     @Test("Integer part and fractional part")
