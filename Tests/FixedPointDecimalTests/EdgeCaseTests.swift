@@ -241,6 +241,23 @@ struct EdgeCaseTests {
         }
     }
 
+    // MARK: - NaN Properties
+
+    @Test("ulp on NaN traps")
+    func ulpNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.ulp }
+    }
+
+    @Test("nextUp on NaN traps")
+    func nextUpNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.nextUp }
+    }
+
+    @Test("nextDown on NaN traps")
+    func nextDownNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.nextDown }
+    }
+
     // MARK: - NaN Rounding
 
     @Test("NaN rounded traps")
