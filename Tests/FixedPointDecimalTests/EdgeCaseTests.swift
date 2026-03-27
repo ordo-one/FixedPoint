@@ -25,18 +25,44 @@ struct EdgeCaseTests {
         #expect(!(nan < nan))  // nan == nan, so not less than
     }
 
-    @Test("NaN propagates through arithmetic")
-    func nanPropagation() {
-        let nan = FixedPointDecimal.nan
-        let value: FixedPointDecimal = 42
-        #expect((nan + value).isNaN)
-        #expect((value + nan).isNaN)
-        #expect((nan - value).isNaN)
-        #expect((nan * value).isNaN)
-        #expect((nan / value).isNaN)
-        #expect((value / nan).isNaN)
-        #expect((nan % value).isNaN)
-        #expect((value % nan).isNaN)
+    @Test("NaN + value traps")
+    func nanAddTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan + 42 }
+    }
+
+    @Test("value + NaN traps")
+    func valueAddNanTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal(42) + .nan }
+    }
+
+    @Test("NaN - value traps")
+    func nanSubTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan - 42 }
+    }
+
+    @Test("NaN * value traps")
+    func nanMulTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan * 42 }
+    }
+
+    @Test("NaN / value traps")
+    func nanDivTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan / 42 }
+    }
+
+    @Test("value / NaN traps")
+    func valueDivNanTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal(42) / .nan }
+    }
+
+    @Test("NaN % value traps")
+    func nanModTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan % 42 }
+    }
+
+    @Test("value % NaN traps")
+    func valueModNanTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal(42) % .nan }
     }
 
     @Test("NaN double value")
@@ -190,43 +216,43 @@ struct EdgeCaseTests {
 
     // MARK: - NaN with Remainder
 
-    @Test("NaN % value = NaN")
-    func nanRemainder() {
-        let value: FixedPointDecimal = 3
-        #expect((FixedPointDecimal.nan % value).isNaN)
-        #expect((value % FixedPointDecimal.nan).isNaN)
+    @Test("NaN % value traps (remainder)")
+    func nanRemainder() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan % 3 }
+    }
+
+    @Test("value % NaN traps (remainder)")
+    func valueRemainderNan() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal(3) % .nan }
     }
 
     // MARK: - NaN Negation
 
-    @Test("Negation of NaN returns NaN")
-    func negateNaN() {
-        let result = -FixedPointDecimal.nan
-        #expect(result.isNaN)
+    @Test("Negation of NaN traps")
+    func negateNaN() async {
+        await #expect(processExitsWith: .failure) { _ = -FixedPointDecimal.nan }
     }
 
-    @Test("Mutating negate of NaN preserves NaN")
-    func mutatingNegateNaN() {
-        var value = FixedPointDecimal.nan
-        value.negate()
-        #expect(value.isNaN)
+    @Test("Mutating negate of NaN traps")
+    func mutatingNegateNaN() async {
+        await #expect(processExitsWith: .failure) {
+            var nan = FixedPointDecimal.nan
+            nan.negate()
+        }
     }
 
     // MARK: - NaN Rounding
 
-    @Test("NaN rounded returns NaN at each scale")
-    func nanRoundedAllScales() {
-        for scale in 0...8 {
-            #expect(FixedPointDecimal.nan.rounded(scale: scale).isNaN,
-                    "NaN.rounded(scale: \(scale)) should be NaN")
-        }
+    @Test("NaN rounded traps")
+    func nanRoundedTraps() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.rounded(scale: 0) }
     }
 
     // MARK: - NaN absoluteValue
 
-    @Test("NaN absoluteValue returns NaN")
-    func nanAbsoluteValue() {
-        #expect(abs(FixedPointDecimal.nan).isNaN)
+    @Test("NaN absoluteValue traps")
+    func nanAbsoluteValue() async {
+        await #expect(processExitsWith: .failure) { _ = abs(FixedPointDecimal.nan) }
     }
 
     // MARK: - Distance & Advance Edge Cases
@@ -409,11 +435,12 @@ struct EdgeCaseTests {
         #expect(value == -42.5 as FixedPointDecimal)
     }
 
-    @Test("VectorArithmetic scale NaN is no-op")
-    func vectorScaleNaN() {
-        var value = FixedPointDecimal.nan
-        value.scale(by: 2.0)
-        #expect(value.isNaN)
+    @Test("VectorArithmetic scale NaN traps")
+    func vectorScaleNaN() async {
+        await #expect(processExitsWith: .failure) {
+            var nan = FixedPointDecimal.nan
+            nan.scale(by: 2.0)
+        }
     }
 
     @Test("VectorArithmetic scale clamps to max")
@@ -438,9 +465,9 @@ struct EdgeCaseTests {
         #expect(value.magnitudeSquared == expected)
     }
 
-    @Test("VectorArithmetic magnitudeSquared of NaN")
-    func vectorMagnitudeSquaredNaN() {
-        #expect(FixedPointDecimal.nan.magnitudeSquared.isNaN)
+    @Test("VectorArithmetic magnitudeSquared of NaN traps")
+    func vectorMagnitudeSquaredNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.magnitudeSquared }
     }
     #endif
 

@@ -35,10 +35,10 @@ struct PowTests {
         #expect(FixedPointDecimal.pow(1, -100) == 1)
     }
 
-    @Test("pow NaN propagates")
-    func powNaN() {
-        #expect(FixedPointDecimal.pow(.nan, 2).isNaN)
-        #expect(FixedPointDecimal.pow(.nan, 0).isNaN)
+    @Test("pow NaN traps")
+    func powNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(.nan, 2) }
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(.nan, 0) }
     }
 
     @Test("pow zero base")
@@ -46,7 +46,11 @@ struct PowTests {
         #expect(FixedPointDecimal.pow(0, 1) == 0)
         #expect(FixedPointDecimal.pow(0, 5) == 0)
         #expect(FixedPointDecimal.pow(0, 0) == 1) // 0^0 = 1 by convention
-        #expect(FixedPointDecimal.pow(0, -1).isNaN) // 1/0 = NaN
+    }
+
+    @Test("pow zero base negative exponent traps")
+    func powZeroBaseNegativeExponent() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(0, -1) }
     }
 
     @Test("pow type inference in context")
@@ -75,25 +79,23 @@ struct PowTests {
         #expect(FixedPointDecimal.pow(FixedPointDecimal(-2.0), 3) == -8.0)
     }
 
-    @Test("pow overflow returns NaN")
-    func powOverflow() {
+    @Test("pow overflow traps")
+    func powOverflow() async {
         // Int64 max raw value is ~9.2×10^18, so 10^11 × 10^8 (scale) overflows
-        #expect(FixedPointDecimal.pow(10, 11).isNaN)
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(10, 11) }
         // Large base to large power
-        #expect(FixedPointDecimal.pow(FixedPointDecimal(1000000), 4).isNaN)
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(FixedPointDecimal(1000000), 4) }
         // Negative exponent where positive overflows
-        #expect(FixedPointDecimal.pow(FixedPointDecimal(1000000), -4).isNaN)
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(FixedPointDecimal(1000000), -4) }
     }
 
     @Test("pow overflow boundary — largest non-overflowing power of 10")
     func powOverflowBoundary() {
         // 10^10 = 10_000_000_000 — rawValue = 10^18, fits in Int64
         let p10 = FixedPointDecimal.pow(10, 10)
-        #expect(!p10.isNaN)
         #expect(p10 == 10000000000 as FixedPointDecimal)
 
-        // 10^11 would be rawValue = 10^19, overflows Int64
-        #expect(FixedPointDecimal.pow(10, 11).isNaN)
+        // 10^11 would be rawValue = 10^19, overflows Int64 — tested in powOverflow
     }
 
     // MARK: - numberOfFractionalDigits
@@ -222,10 +224,9 @@ struct PowTests {
         #expect(FixedPointDecimal.pow(ten, -9) == .zero)
     }
 
-    @Test("pow(10, 11) overflows returns NaN")
-    func pow10Overflow() {
-        let ten: FixedPointDecimal = 10
-        #expect(FixedPointDecimal.pow(ten, 11).isNaN)
+    @Test("pow(10, 11) overflows traps")
+    func pow10Overflow() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.pow(10, 11) }
     }
 
     @Test("pow(10, n) fast path matches general path for all valid exponents")

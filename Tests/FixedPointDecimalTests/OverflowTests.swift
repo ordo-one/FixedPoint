@@ -102,44 +102,39 @@ struct OverflowTests {
 
     // MARK: - NaN with Overflow-Reporting Operators
 
-    @Test("NaN addingReportingOverflow returns NaN, no overflow")
-    func nanAddReporting() {
-        let nan = FixedPointDecimal.nan
-        let value: FixedPointDecimal = 42
-        let (result1, overflow1) = nan.addingReportingOverflow(value)
-        #expect(result1.isNaN)
-        #expect(!overflow1)
-
-        let (result2, overflow2) = value.addingReportingOverflow(nan)
-        #expect(result2.isNaN)
-        #expect(!overflow2)
+    @Test("NaN addingReportingOverflow traps (lhs)")
+    func nanAddReportingLhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.addingReportingOverflow(FixedPointDecimal(42))
+        }
     }
 
-    @Test("NaN subtractingReportingOverflow returns NaN, no overflow")
-    func nanSubReporting() {
-        let nan = FixedPointDecimal.nan
-        let value: FixedPointDecimal = 42
-        let (result, overflow) = nan.subtractingReportingOverflow(value)
-        #expect(result.isNaN)
-        #expect(!overflow)
+    @Test("NaN addingReportingOverflow traps (rhs)")
+    func nanAddReportingRhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(42).addingReportingOverflow(.nan)
+        }
     }
 
-    @Test("NaN multipliedReportingOverflow returns NaN, no overflow")
-    func nanMulReporting() {
-        let nan = FixedPointDecimal.nan
-        let value: FixedPointDecimal = 42
-        let (result, overflow) = nan.multipliedReportingOverflow(by: value)
-        #expect(result.isNaN)
-        #expect(!overflow)
+    @Test("NaN subtractingReportingOverflow traps")
+    func nanSubReporting() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.subtractingReportingOverflow(FixedPointDecimal(42))
+        }
     }
 
-    @Test("NaN dividedReportingOverflow returns NaN, no overflow")
-    func nanDivReporting() {
-        let nan = FixedPointDecimal.nan
-        let value: FixedPointDecimal = 42
-        let (result, overflow) = nan.dividedReportingOverflow(by: value)
-        #expect(result.isNaN)
-        #expect(!overflow)
+    @Test("NaN multipliedReportingOverflow traps")
+    func nanMulReporting() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.multipliedReportingOverflow(by: FixedPointDecimal(42))
+        }
+    }
+
+    @Test("NaN dividedReportingOverflow traps")
+    func nanDivReporting() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.dividedReportingOverflow(by: FixedPointDecimal(42))
+        }
     }
 
     // MARK: - Overflow near boundary

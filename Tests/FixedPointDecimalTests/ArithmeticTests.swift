@@ -303,12 +303,11 @@ struct ArithmeticTests {
         #expect(result == FixedPointDecimal.min)
     }
 
-    @Test("NaN / Int64 returns NaN (guards against Int64.min / -1 overflow)")
-    func nanDivByInt64NegOne() {
-        // NaN sentinel is Int64.min; dividing Int64.min by -1 would overflow
-        // but the NaN check catches it first
-        let result = FixedPointDecimal.nan / (-1)
-        #expect(result.isNaN)
+    @Test("NaN / Int64 traps (guards against Int64.min / -1 overflow)")
+    func nanDivByInt64NegOne() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan / (-1)
+        }
     }
 
     // MARK: - Remainder Edge Cases
@@ -353,24 +352,21 @@ struct ArithmeticTests {
         #expect(a == 1.3 as FixedPointDecimal)
     }
 
-    // MARK: - NaN Propagation in Mixed-Type Arithmetic
+    // MARK: - NaN Trapping in Mixed-Type Arithmetic
 
-    @Test("NaN * Int64 propagates NaN")
-    func nanTimesInt64() {
-        let nan = FixedPointDecimal.nan
-        #expect((nan * 5).isNaN)
+    @Test("NaN * Int64 traps")
+    func nanTimesInt64() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan * 5 }
     }
 
-    @Test("Int64 * NaN propagates NaN")
-    func int64TimesNaN() {
-        let nan = FixedPointDecimal.nan
-        #expect((5 * nan).isNaN)
+    @Test("Int64 * NaN traps")
+    func int64TimesNaN() async {
+        await #expect(processExitsWith: .failure) { _ = 5 * FixedPointDecimal.nan }
     }
 
-    @Test("NaN / Int64 propagates NaN")
-    func nanDividedByInt64() {
-        let nan = FixedPointDecimal.nan
-        #expect((nan / 5).isNaN)
+    @Test("NaN / Int64 traps")
+    func nanDividedByInt64() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan / 5 }
     }
 
     // MARK: - Iterator Aggregation (Sum and Product)

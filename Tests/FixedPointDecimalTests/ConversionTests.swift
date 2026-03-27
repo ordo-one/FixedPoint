@@ -207,9 +207,9 @@ struct ConversionTests {
         #expect(value.magnitude == 42.5 as FixedPointDecimal)
     }
 
-    @Test("Numeric magnitude for NaN is NaN")
-    func magnitudeNaN() {
-        #expect(FixedPointDecimal.nan.magnitude.isNaN)
+    @Test("Numeric magnitude for NaN traps")
+    func magnitudeNaN() async {
+        await #expect(processExitsWith: .failure) { _ = FixedPointDecimal.nan.magnitude }
     }
 
     @Test("Numeric magnitude for zero")

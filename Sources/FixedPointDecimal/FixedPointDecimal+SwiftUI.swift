@@ -18,12 +18,13 @@ extension FixedPointDecimal: VectorArithmetic {
     /// Scales the raw value by a `Double` factor. Used by SwiftUI's animation system.
     ///
     /// The result is clamped to the valid range (`Int64.min + 1 ... Int64.max`)
-    /// to avoid producing the NaN sentinel. NaN values are left unchanged.
+    /// to avoid producing the NaN sentinel. Traps on NaN.
     ///
     /// - Parameter rhs: The scaling factor.
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public mutating func scale(by rhs: Double) {
-        if isNaN { return }
+        precondition(!isNaN, "NaN in FixedPointDecimal scale")
         let scaled = Double(rawValue) * rhs
         if scaled >= Double(Int64.max) {
             self = Self(rawValue: .max)
@@ -38,10 +39,10 @@ extension FixedPointDecimal: VectorArithmetic {
     /// The squared magnitude of the raw storage, used by SwiftUI for
     /// animation interpolation.
     ///
-    /// Returns `Double.nan` for NaN values.
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public var magnitudeSquared: Double {
-        if isNaN { return .nan }
+        precondition(!isNaN, "magnitudeSquared called on NaN")
         let d = Double(rawValue)
         return d * d
     }

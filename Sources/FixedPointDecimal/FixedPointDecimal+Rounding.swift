@@ -28,7 +28,7 @@ extension FixedPointDecimal {
 
     /// Returns this value rounded to the specified number of fractional decimal digits.
     ///
-    /// Returns NaN unchanged.
+    /// Traps on NaN.
     ///
     /// ```swift
     /// let price = FixedPointDecimal("123.456789")!
@@ -42,12 +42,13 @@ extension FixedPointDecimal {
     ///   - scale: The number of fractional digits to keep (0...8). Default is 0.
     ///   - mode: The rounding mode. Default is `.toNearestOrEven`.
     /// - Returns: The rounded value.
+    /// - Precondition: The value must not be NaN.
     /// - Precondition: `scale` must be in `0...8`.
     @inlinable
     public func rounded(scale: Int = 0, _ mode: RoundingMode = .toNearestOrEven) -> Self {
         precondition(scale >= 0 && scale <= Self.fractionalDigitCount,
                      "Scale must be in 0...\(Self.fractionalDigitCount)")
-        if isNaN { return .nan }
+        precondition(!isNaN, "NaN in FixedPointDecimal rounding")
         guard scale < Self.fractionalDigitCount else { return self }
 
         let divisor = Self._powerOf10(Self.fractionalDigitCount - scale)
@@ -174,7 +175,7 @@ extension FixedPointDecimal {
 
 /// Returns the absolute value of a `FixedPointDecimal`.
 ///
-/// Returns NaN unchanged.
+/// Traps on NaN.
 ///
 /// ```swift
 /// let v: FixedPointDecimal = "-42.5"
@@ -183,8 +184,9 @@ extension FixedPointDecimal {
 ///
 /// - Parameter value: The value whose absolute value is returned.
 /// - Returns: The absolute value of `value`.
+/// - Precondition: The value must not be NaN.
 @inlinable
 public func abs(_ value: FixedPointDecimal) -> FixedPointDecimal {
-    if value.isNaN { return .nan }
+    precondition(!value.isNaN, "abs called on NaN")
     return FixedPointDecimal(rawValue: abs(value._storage))
 }

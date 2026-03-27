@@ -279,29 +279,31 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// Unlike `Double`, where ULP varies across the range, `FixedPointDecimal`
     /// has uniform precision — the distance between any two adjacent
     /// representable values is always `0.00000001`.
-    /// Returns NaN for NaN.
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public var ulp: FixedPointDecimal {
-        if isNaN { return .nan }
+        precondition(!isNaN, "ulp called on NaN")
         return .leastNonzeroMagnitude
     }
 
     /// The least representable value greater than this one.
     ///
-    /// Returns NaN for NaN. Traps on `.max` (no representable value above).
+    /// - Precondition: The value must not be NaN.
+    /// - Precondition: The value must be less than `.max`.
     @inlinable
     public var nextUp: FixedPointDecimal {
-        if isNaN { return .nan }
+        precondition(!isNaN, "nextUp called on NaN")
         precondition(self < .max, "nextUp called on .max")
         return FixedPointDecimal(rawValue: _storage + 1)
     }
 
     /// The greatest representable value less than this one.
     ///
-    /// Returns NaN for NaN. Traps on `.min` (no representable value below).
+    /// - Precondition: The value must not be NaN.
+    /// - Precondition: The value must be greater than `.min`.
     @inlinable
     public var nextDown: FixedPointDecimal {
-        if isNaN { return .nan }
+        precondition(!isNaN, "nextDown called on NaN")
         precondition(self > .min, "nextDown called on .min")
         return FixedPointDecimal(rawValue: _storage - 1)
     }
@@ -410,7 +412,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// - Returns: `x` raised to the power `n`.
     @inlinable
     public static func pow(_ x: FixedPointDecimal, _ n: Int) -> FixedPointDecimal {
-        guard !x.isNaN else { return .nan }
+        precondition(!x.isNaN, "NaN in FixedPointDecimal pow")
 
         if n == 0 { return FixedPointDecimal(rawValue: scaleFactor) } // 1
         if n == 1 { return x }
@@ -421,24 +423,20 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
             if shift >= 0, shift < _pow10Table.count {
                 return FixedPointDecimal(rawValue: _pow10Table[shift])
             }
-            return shift < 0 ? .zero : .nan
+            precondition(shift < 0, "FixedPointDecimal pow overflow")
+            return .zero
         }
 
         if n < 0 {
             let positive = pow(x, -n)
-            if positive.isNaN || positive == .zero { return .nan }
-            let (result, overflow) = FixedPointDecimal(rawValue: scaleFactor)
-                .dividedReportingOverflow(by: positive)
-            return overflow ? .nan : result
+            precondition(positive != .zero, "Division by zero in FixedPointDecimal pow")
+            return FixedPointDecimal(rawValue: scaleFactor) / positive
         }
 
-        // Repeated multiplication with overflow detection.
-        // Uses multipliedReportingOverflow to return .nan instead of trapping.
+        // Repeated multiplication — traps on overflow via `*`.
         var result = x
         for _ in 1 ..< n {
-            let (product, overflow) = result.multipliedReportingOverflow(by: x)
-            if overflow { return .nan }
-            result = product
+            result = result * x
         }
         return result
     }

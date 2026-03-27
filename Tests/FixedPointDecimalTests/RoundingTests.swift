@@ -114,9 +114,9 @@ struct RoundingTests {
         #expect(abs(FixedPointDecimal.zero) == .zero)
     }
 
-    @Test("Absolute value of NaN")
-    func absNaN() {
-        #expect(abs(FixedPointDecimal.nan).isNaN)
+    @Test("Absolute value of NaN traps")
+    func absNaN() async {
+        await #expect(processExitsWith: .failure) { _ = abs(FixedPointDecimal.nan) }
     }
 
     // MARK: - Rounding at Every Scale
