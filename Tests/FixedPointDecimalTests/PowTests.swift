@@ -181,8 +181,8 @@ struct PowTests {
     func significandExponentPrecisionLoss() {
         // exponent -10 means shift = 8 + (-10) = -2, so divide by 100
         // 12345 / 100 = 123 (truncated) → 0.00000123
-        let v = FixedPointDecimal(significand: 12345, exponent: -10)
-        #expect(v == FixedPointDecimal(rawValue: 123))
+        let value = FixedPointDecimal(significand: 12345, exponent: -10)
+        #expect(value == FixedPointDecimal(rawValue: 123))
     }
 
     // MARK: - pow(10, n) fast path
@@ -231,20 +231,20 @@ struct PowTests {
     @Test("pow(10, n) fast path matches general path for all valid exponents")
     func pow10MatchesGeneral() {
         let ten: FixedPointDecimal = 10
-        for n in -8...10 {
-            let fast = FixedPointDecimal.pow(ten, n)
-            if n >= 0 {
+        for exponent in -8...10 {
+            let fast = FixedPointDecimal.pow(ten, exponent)
+            if exponent >= 0 {
                 var manual: FixedPointDecimal = 1
-                for _ in 0..<n {
+                for _ in 0..<exponent {
                     let (product, _) = manual.multipliedReportingOverflow(by: ten)
                     manual = product
                 }
-                #expect(fast == manual, "pow(10, \(n)): fast=\(fast) manual=\(manual)")
+                #expect(fast == manual, "pow(10, \(exponent)): fast=\(fast) manual=\(manual)")
             } else {
-                let positive = FixedPointDecimal.pow(ten, -n)
+                let positive = FixedPointDecimal.pow(ten, -exponent)
                 let one: FixedPointDecimal = 1
                 let (manual, _) = one.dividedReportingOverflow(by: positive)
-                #expect(fast == manual, "pow(10, \(n)): fast=\(fast) manual=\(manual)")
+                #expect(fast == manual, "pow(10, \(exponent)): fast=\(fast) manual=\(manual)")
             }
         }
     }
