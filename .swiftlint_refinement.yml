@@ -1,3 +1,27 @@
 # https://realm.github.io/SwiftLint/rule-directory.html
 disabled_rules:
-#  - some_rule_to_disable
+  - trailing_comma
+  - file_length
+  - type_body_length
+  - function_body_length
+  - cyclomatic_complexity
+  - for_where
+  - shorthand_operator
+  - redundant_discardable_let
+  - sorted_imports
+  - extension_access_modifier
+  - vertical_whitespace_opening_braces
+  - attributes
+  - file_name
+  - legacy_multiple
+  - identical_operands
+  - array_init
+  - non_optional_string_data_conversion
+  - prefer_self_in_static_references
+  - number_separator
+
+identifier_name:
+  min_length: 1
+  allowed_symbols: ['_']
+  excluded:
+    - id
