@@ -30,7 +30,7 @@ Full [API documentation](https://swiftpackageindex.com/ordo-one/FixedPoint/docum
 - **Pure Swift core** -- no Foundation dependency except for `Decimal` conversions
 - **Cross-platform** -- Linux + all Apple platforms, x86 + ARM, Swift 6.2
 - **Safe by default** -- trapping arithmetic (matching Swift `Int`), with wrapping and overflow-reporting variants
-- **NaN support** -- sentinel-based NaN that propagates through all operations
+- **NaN support** -- sentinel-based NaN that traps all operations
 - **Banker's rounding everywhere** -- all entry points (string parsing, `Double` conversion, `Decimal` conversion, arithmetic) use banker's rounding (round half to even). Explicit `rounded(scale:_:)` supports six modes
 
 ## Performance
