@@ -242,7 +242,7 @@ let current = bestBid.load(ordering: .acquiring)
 let nan = FixedPointDecimal.nan
 nan.isNaN                    // true
 nan == nan                   // true (sentinel semantics)
-(nan + someValue).isNaN      // true (propagates)
+nan + someValue              // traps (NaN is signalling)
 nan.description              // "nan"
 ```
 
@@ -301,7 +301,7 @@ bash Fuzz/run.sh debug run
 
 The fuzzer validates invariants across all operations:
 
-- **Arithmetic**: commutativity, NaN propagation, no silent NaN sentinel creation
+- **Arithmetic**: commutativity, NaN trapping, no silent NaN sentinel creation
 - **Comparisons**: strict total order (exactly one of `<`, `==`, `>`)
 - **Conversions**: String, Double, Decimal, Codable round-trips
 - **Rounding**: scale-8 identity, no overflow
