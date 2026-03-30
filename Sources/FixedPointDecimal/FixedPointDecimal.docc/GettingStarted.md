@@ -97,13 +97,13 @@ let i = Int(somePrice)                    // 123
 
 ## NaN Support
 
-A sentinel-based NaN value propagates through all operations:
+NaN is signalling — any arithmetic operation on a NaN value traps immediately:
 
 ```swift
 let missing = FixedPointDecimal.nan
 missing.isNaN                              // true
-(missing + someValue).isNaN                // true (propagates)
 missing == .nan                            // true (sentinel semantics)
+missing + someValue                        // traps (precondition failure)
 ```
 
 ## Codable

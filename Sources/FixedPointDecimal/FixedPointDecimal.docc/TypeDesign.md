@@ -31,7 +31,7 @@ This value was chosen because:
 NaN uses **sentinel semantics**, not IEEE 754:
 - `NaN == NaN` returns `true` (required for `Hashable` and `Comparable` correctness)
 - NaN compares less than all non-NaN values (provides a strict total order for sorting)
-- Arithmetic with NaN propagates NaN (any operation involving NaN returns NaN)
+- Arithmetic with NaN traps (NaN is signalling — any operation involving NaN is a precondition failure)
 - `init(_ decimal: Decimal)` maps `Decimal.nan` to `.nan`; `Decimal(.nan)` returns `Decimal.nan`
 - `isFinite` returns `false` for NaN, `true` for all other values
 - `sign` returns `.plus` for NaN (NaN is excluded from the negative check)

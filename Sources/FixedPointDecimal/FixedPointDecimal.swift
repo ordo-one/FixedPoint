@@ -393,7 +393,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// Follows the swift-numerics `ElementaryFunctions` naming convention.
     ///
     /// Negative exponents compute the reciprocal: `pow(x, -n) == 1 / pow(x, n)`.
-    /// Returns `.nan` if the base is NaN, or if the result overflows Int64 storage.
+    /// - Precondition: The base must not be NaN. Traps on overflow.
     ///
     /// ```swift
     /// FixedPointDecimal.pow(10, 3)     // 1000
