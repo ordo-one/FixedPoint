@@ -1,8 +1,10 @@
 /// Reason a test vector was skipped by an external test suite runner.
 enum TestSkipReason: String, CaseIterable, CustomStringConvertible {
     /// Rounding mode is not half_even (our canonical rounding mode).
-    /// Future: run these tests by applying our `rounded(scale:_:)` with the
-    /// matching rounding mode after computation, since we support all 6 modes.
+    /// Only applies to rounding-dependent operations (multiply, divide, remainder)
+    /// where our arithmetic is hardcoded to banker's rounding via `_bankersDiv`.
+    /// Rounding-independent operations (add, subtract, compare, abs, negate, min, max)
+    /// run with all rounding modes since the result is exact.
     case rounding = "rounding"
     /// Value is outside our representable range (~92 billion with 8 fractional digits)
     case outOfRange = "out-of-range"

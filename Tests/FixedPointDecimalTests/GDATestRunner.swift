@@ -139,16 +139,17 @@ struct GDATestRunner {
             return .skipped(.condition)
         }
 
-        // Only run tests with rounding modes we support, and only half_even by default
-        // (our canonical mode). We also handle tests that don't depend on rounding.
-        if rounding != "half_even" && rounding != "half_up" {
-            // For non-standard rounding modes, skip unless the operation doesn't depend on rounding
-            let roundingIndependent: Set<String> = ["compare", "comparetotal", "comparesig",
-                                                     "abs", "minus", "plus", "min", "max",
-                                                     "copy", "copyabs", "copynegate", "copysign"]
-            if !roundingIndependent.contains(opName) {
-                return .skipped(.rounding)
-            }
+        // Operations that produce exact results (no rounding applied) can run
+        // with any rounding mode. Only multiply/divide/remainder use _bankersDiv
+        // internally and must be restricted to half_even.
+        let roundingIndependent: Set<String> = [
+            "add", "subtract",
+            "compare", "comparetotal", "comparesig",
+            "abs", "minus", "plus", "min", "max",
+            "copy", "copyabs", "copynegate", "copysign",
+        ]
+        if !roundingIndependent.contains(opName) && rounding != "half_even" {
+            return .skipped(.rounding)
         }
 
         // Skip if precision is outside our compatible range.

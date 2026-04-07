@@ -64,9 +64,13 @@ struct FahmyTestRunner {
         let op = header.last!
         guard op == expectedOp else { return nil }
 
-        // Parse rounding mode
+        // Parse rounding mode. Add/subtract are exact Int64 operations so
+        // rounding mode doesn't affect the result. Only filter for mul/div.
         let rounding = tokens[1]
-        guard rounding == roundingFilter else { return .skipped(.rounding) }
+        let roundingDependent: Set<Character> = ["*", "/"]
+        if roundingDependent.contains(op) {
+            guard rounding == roundingFilter else { return .skipped(.rounding) }
+        }
 
         // Find arrow
         guard let arrowIdx = tokens.firstIndex(of: "->") else { return nil }
@@ -81,6 +85,13 @@ struct FahmyTestRunner {
 
         // Parse flags (after result)
         let flags = Set(tokens[(arrowIdx + 2)...])
+
+        // For rounding-independent ops with non-default rounding: if the result
+        // is inexact (x flag), the decimal64 engine applied precision-rounding using
+        // the test's rounding mode. Our exact result won't match, so skip.
+        if rounding != roundingFilter && flags.contains("x") {
+            return .skipped(.precisionLoss)
+        }
 
         // Skip if flags indicate conditions we can't handle
         if flags.contains("o") || flags.contains("z") || flags.contains("i") || flags.contains("u") {

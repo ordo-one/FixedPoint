@@ -66,9 +66,19 @@ struct IntelTestRunner {
         // Filter by operation
         if let ops = operations, !ops.contains(funcName) { return nil }
 
-        // Parse rounding mode
+        // Parse rounding mode. Rounding-independent operations (exact Int64
+        // arithmetic, comparisons) run with any mode. Rounding-dependent
+        // operations (mul/div/rem) only run with our canonical mode.
         guard let rounding = Int(tokens[1]) else { return nil }
-        guard rounding == roundingFilter else { return .skipped(.rounding) }
+        let roundingIndependent: Set<String> = [
+            "bid64_add", "bid64_sub",
+            "bid64_abs", "bid64_negate",
+            "bid64_quiet_equal", "bid64_quiet_less", "bid64_quiet_greater",
+            "bid64_minnum", "bid64_maxnum",
+        ]
+        if !roundingIndependent.contains(funcName) {
+            guard rounding == roundingFilter else { return .skipped(.rounding) }
+        }
 
         // Parse status (last token)
         let statusHex = tokens.last!
