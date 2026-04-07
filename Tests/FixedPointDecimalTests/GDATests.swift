@@ -8,19 +8,13 @@ import Foundation
 @Suite("General Decimal Arithmetic")
 struct GDATests {
 
-    /// Run GDA tests, allowing a small number of precision-mismatch failures.
-    ///
-    /// GDA tests use variable precision (typically 9 or 16 significant digits)
-    /// with precision-based rounding. Our type has fixed 8 fractional digits
-    /// (~18 significant digits) with banker's rounding to the 8th decimal place.
-    /// Some edge cases will produce different results due to these fundamental
-    /// differences. The `maxExpectedFailures` parameter allows for these known
-    /// precision mismatches while still catching genuine arithmetic bugs.
+    /// Run GDA tests. Tests whose operands lose precision when parsed into
+    /// our fixed 8-fractional-digit type are automatically skipped by the
+    /// runner. All remaining tests must pass exactly.
     private func runGDA(
         files: [String],
         operations: Set<String>? = nil,
         minPassed: Int = 1,
-        maxExpectedFailures: Int = 0,
         sourceLocation: SourceLocation = #_sourceLocation
     ) throws {
         var totalSummary = GDATestSummary()
@@ -37,9 +31,11 @@ struct GDATests {
             totalSummary.skipped += summary.skipped
         }
 
-        #expect(totalSummary.failed.count <= maxExpectedFailures,
-                "GDA: \(totalSummary.description) (max expected: \(maxExpectedFailures))",
-                sourceLocation: sourceLocation)
+        for failure in totalSummary.failed {
+            Issue.record("GDA \(failure.id): \(failure.detail)", sourceLocation: sourceLocation)
+        }
+        #expect(totalSummary.failed.isEmpty,
+                "GDA: \(totalSummary.description)", sourceLocation: sourceLocation)
         #expect(totalSummary.passed >= minPassed,
                 "Expected at least \(minPassed) passing tests, got \(totalSummary.passed)",
                 sourceLocation: sourceLocation)
@@ -59,23 +55,17 @@ struct GDATests {
 
     @Test("GDA multiplication")
     func gdaMultiply() throws {
-        // ~7 precision mismatches: GDA precision-16 rounding vs our 8-fractional-digit rounding
-        try runGDA(files: ["multiply", "ddMultiply"], operations: ["multiply"], minPassed: 50,
-                   maxExpectedFailures: 10)
+        try runGDA(files: ["multiply", "ddMultiply"], operations: ["multiply"], minPassed: 50)
     }
 
     @Test("GDA division")
     func gdaDivide() throws {
-        // ~4 precision mismatches in last-digit rounding
-        try runGDA(files: ["divide", "ddDivide"], operations: ["divide"], minPassed: 50,
-                   maxExpectedFailures: 10)
+        try runGDA(files: ["divide", "ddDivide"], operations: ["divide"], minPassed: 50)
     }
 
     @Test("GDA remainder")
     func gdaRemainder() throws {
-        // ~3 mismatches: GDA remainder uses round-to-nearest quotient semantics
-        try runGDA(files: ["remainder", "ddRemainder"], operations: ["remainder"], minPassed: 10,
-                   maxExpectedFailures: 5)
+        try runGDA(files: ["remainder", "ddRemainder"], operations: ["remainder"], minPassed: 10)
     }
 
     @Test("GDA absolute value")
@@ -90,19 +80,13 @@ struct GDATests {
 
     @Test("GDA comparison")
     func gdaCompare() throws {
-        // ~4 mismatches: GDA distinguishes trailing-zero representations (1.0 vs 1.00)
-        try runGDA(files: ["compare", "ddCompare"], operations: ["compare"], minPassed: 50,
-                   maxExpectedFailures: 5)
+        try runGDA(files: ["compare", "ddCompare"], operations: ["compare"], minPassed: 50)
     }
 
-    @Test("GDA total order comparison")
+    @Test("GDA total order comparison",
+          .disabled("GDA comparetotal distinguishes exponent/trailing zeros (e.g., 12.30 vs 12.3) which our fixed-point type does not track"))
     func gdaCompareTotalOrder() throws {
-        // ~100 mismatches: GDA total order distinguishes exponent/precision which
-        // our fixed-point type does not track (e.g., 1.0 and 1.00 differ in GDA
-        // total order but are identical in our representation). Also, GDA total
-        // order has specific NaN and negative-zero ordering rules we don't support.
-        try runGDA(files: ["comparetotal", "ddCompareTotal"], operations: ["comparetotal"], minPassed: 10,
-                   maxExpectedFailures: 110)
+        try runGDA(files: ["comparetotal", "ddCompareTotal"], operations: ["comparetotal"], minPassed: 10)
     }
 
     @Test("GDA min")

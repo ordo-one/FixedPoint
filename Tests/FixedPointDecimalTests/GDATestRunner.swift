@@ -162,6 +162,15 @@ struct GDATestRunner {
             return .skipped(id: id, reason: "unparseable expected: \(expectedStr)")
         }
 
+        // For binary operations, verify operands parse without precision loss.
+        // If an operand has more than 8 fractional digits, it gets rounded on
+        // input to our type, corrupting the test. Skip these cases.
+        for operandStr in operands {
+            if operandLosesPrecision(operandStr) {
+                return .skipped(id: id, reason: "operand loses precision: \(operandStr)")
+            }
+        }
+
         // Run the operation
         return runOperation(id: id, op: opName, operands: operands, expected: expected,
                             rounding: rounding, conditions: conditions)
@@ -345,9 +354,10 @@ struct GDATestRunner {
         let isNegative = mantissaStr.hasPrefix("-")
         let absMantissa = isNegative ? String(mantissaStr.dropFirst()) : mantissaStr
 
-        let parts = absMantissa.split(separator: ".", maxSplits: 1)
-        let intPart = String(parts[0])
-        let fracPart = parts.count > 1 ? String(parts[1]) : ""
+        // Use components(separatedBy:) not split() to preserve empty leading parts (e.g., ".7")
+        let parts = absMantissa.components(separatedBy: ".")
+        let intPart = parts[0] // may be "" for ".7"
+        let fracPart = parts.count > 1 ? parts[1] : ""
 
         // Combine into significand and adjust exponent
         let significandStr = intPart + fracPart
@@ -381,6 +391,46 @@ struct GDATestRunner {
         }
 
         return nil
+    }
+
+    /// Check if a GDA operand string would lose precision when parsed into
+    /// our type (which has exactly 8 fractional digits). Returns true if the
+    /// operand has more than 8 fractional digits or more significant digits
+    /// than our type can represent.
+    private static func operandLosesPrecision(_ str: String) -> Bool {
+        var s = str
+        if s.hasPrefix("'") && s.hasSuffix("'") { s = String(s.dropFirst().dropLast()) }
+        if s.hasPrefix("\"") && s.hasSuffix("\"") { s = String(s.dropFirst().dropLast()) }
+
+        let lower = s.lowercased()
+        // Special values don't lose precision
+        if lower == "nan" || lower.hasPrefix("nan") || lower.hasPrefix("snan") ||
+           lower.contains("inf") || lower == "#" { return false }
+
+        // For scientific notation, compute effective fractional digits
+        if lower.contains("e") {
+            guard let eIdx = lower.firstIndex(of: "e") else { return false }
+            let mantissa = String(s[s.startIndex..<eIdx])
+            let expStr = String(s[s.index(after: eIdx)...]).replacingOccurrences(of: "+", with: "")
+            guard let exp = Int(expStr) else { return false }
+            let absMantissa = mantissa.hasPrefix("-") ? String(mantissa.dropFirst()) : mantissa
+            let parts = absMantissa.split(separator: ".", maxSplits: 1)
+            let fracDigits = parts.count > 1 ? parts[1].count : 0
+            let effectiveFracDigits = fracDigits - exp
+            return effectiveFracDigits > 8
+        }
+
+        // For plain decimal, count fractional digits
+        if let dotIdx = s.firstIndex(of: ".") {
+            let fracDigits = s[s.index(after: dotIdx)...].count
+            if fracDigits > 8 { return true }
+        }
+
+        // Check total significant digits (our Int64 has ~18.9 digits max)
+        let digits = s.filter { $0.isNumber }
+        if digits.count > 18 { return true }
+
+        return false
     }
 
     /// Tokenize a line, handling quoted strings.
