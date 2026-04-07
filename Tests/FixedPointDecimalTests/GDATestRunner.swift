@@ -165,7 +165,7 @@ struct GDATestRunner {
         // Parse operands and expected result
         guard let expected = parseDecimal(expectedStr) else {
             // Expected result is unparseable (Infinity, sNaN with payload, etc.)
-            return .skipped(.unparseable)
+            return .skipped(.notRepresentable)
         }
 
         // For binary operations, verify operands parse without precision loss.
@@ -188,13 +188,13 @@ struct GDATestRunner {
         conditions: Set<String>
     ) -> GDATestResult {
         guard let op1 = operands.first.flatMap(parseDecimal) else {
-            return .skipped(.unparseable)
+            return .skipped(.notRepresentable)
         }
 
         switch op {
         case "add":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)
@@ -205,7 +205,7 @@ struct GDATestRunner {
 
         case "subtract":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)
@@ -216,7 +216,7 @@ struct GDATestRunner {
 
         case "multiply":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)
@@ -227,7 +227,7 @@ struct GDATestRunner {
 
         case "divide":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN || op2 == .zero {
                 return .skipped(.nan)
@@ -238,7 +238,7 @@ struct GDATestRunner {
 
         case "remainder":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN || op2 == .zero {
                 return .skipped(.nan)
@@ -262,7 +262,7 @@ struct GDATestRunner {
 
         case "compare":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)
@@ -276,7 +276,7 @@ struct GDATestRunner {
 
         case "comparetotal":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             // comparetotal gives a total ordering including NaN
             // Our type has a total order by definition (Int64 comparison)
@@ -288,7 +288,7 @@ struct GDATestRunner {
 
         case "min":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)
@@ -298,7 +298,7 @@ struct GDATestRunner {
 
         case "max":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(.unparseable)
+                return .skipped(.notRepresentable)
             }
             if op1.isNaN || op2.isNaN {
                 return .skipped(.nan)

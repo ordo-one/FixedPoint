@@ -113,28 +113,28 @@ struct FahmyTestRunner {
         // Execute operation
         switch op {
         case "+":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].addingReportingOverflow(operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "-":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].subtractingReportingOverflow(operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "*":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].multipliedReportingOverflow(by: operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "/":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[0].isNaN || operands[1].isNaN || operands[1] == .zero { return .skipped(.nan) }
             let (result, overflow) = operands[0].dividedReportingOverflow(by: operands[1])
             if overflow { return .skipped(.overflow) }

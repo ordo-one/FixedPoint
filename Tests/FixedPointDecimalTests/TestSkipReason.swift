@@ -22,8 +22,9 @@ enum TestSkipReason: String, CaseIterable, CustomStringConvertible {
     case precision = "precision"
     /// GDA condition flags (overflow, underflow, etc.)
     case condition = "condition"
-    /// Unparseable operand or result (infinity, sNaN with payload, etc.)
-    case unparseable = "unparseable"
+    /// Operand or result is not representable: infinity, sNaN with payload,
+    /// or value outside Int64 range after scaling
+    case notRepresentable = "not-representable"
     /// Operation not supported
     case unsupportedOp = "unsupported-op"
 

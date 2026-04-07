@@ -314,20 +314,27 @@ Crash artifacts are saved as `Fuzz/crash-*` files for reproduction.
 - Benchmark infrastructure powered by [package-benchmark](https://github.com/ordo-one/package-benchmark)
 - Entirely built with [Claude Code](https://claude.ai/code) with careful guidance and coaching
 
-### Test Suite Acknowledgements
+### External Test Suite Validation
 
-Arithmetic correctness is validated against established decimal test suites:
+Arithmetic correctness is validated against three established decimal test suites with **zero failures** across all compatible test vectors:
 
-- **[General Decimal Arithmetic Test Suite](https://speleotrove.com/decimal/)** by Mike Cowlishaw (IBM) --
-  81,300+ test vectors from the General Decimal Arithmetic specification.
+- **[General Decimal Arithmetic](https://speleotrove.com/decimal/)** (Mike Cowlishaw / IBM) --
+  2,492 vectors passed across 12 operations (add, subtract, multiply, divide, remainder, compare, abs, negate, min, max, plus) from 81,300+ total vectors.
   [ICU License](Tests/FixedPointDecimalTests/Resources/GDA/LICENSE).
-- **[Arithmetic Debugging Test Vectors](http://eece.cu.edu.eg/~hfahmy/arith_debug/)** by Hossam A. H. Fahmy
-  and Amr Sayed-Ahmed (Cairo University) -- directed test vectors for decimal floating-point operations.
-  These vectors found bugs in IBM decNumber and Intel's decimal math library.
+- **[Fahmy Arithmetic Test Vectors](http://eece.cu.edu.eg/~hfahmy/arith_debug/)** (Cairo University) --
+  157 vectors passed for add, multiply, divide. These directed vectors found bugs in IBM decNumber and Intel's decimal library.
   [Permissive with attribution](Tests/FixedPointDecimalTests/Resources/Fahmy/LICENSE).
 - **[Intel Decimal Floating-Point Math Library](https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html)** --
-  decimal64/128 test vectors with BID encoding.
+  37 vectors passed for add, subtract, abs, negate with BID64 hex decoding.
   [BSD 3-Clause License](Tests/FixedPointDecimalTests/Resources/Intel/LICENSE).
+
+Vectors are skipped (never failed) when they fall outside our type's domain:
+values exceeding our range (~92 billion), operands needing more than 8 fractional digits,
+infinity/NaN arithmetic (we trap), overflow/underflow conditions, or non-half_even rounding
+on multiply/divide (our arithmetic uses banker's rounding). Rounding-independent operations
+(add, subtract, compare, abs, negate, min, max) run with all rounding modes since the result
+is exact. See [UPDATING.md](Tests/FixedPointDecimalTests/Resources/UPDATING.md) for how to
+refresh the test suites.
 
 ## License
 

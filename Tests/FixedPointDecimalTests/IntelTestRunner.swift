@@ -131,70 +131,70 @@ struct IntelTestRunner {
                                    expected: FixedPointDecimal, lineNumber: Int) -> TestResult {
         switch funcName {
         case "bid64_add":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let (result, overflow) = operands[0].addingReportingOverflow(operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_sub":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let (result, overflow) = operands[0].subtractingReportingOverflow(operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_mul":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let (result, overflow) = operands[0].multipliedReportingOverflow(by: operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_div":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[1] == .zero { return .skipped(.zeroDivisor) }
             let (result, overflow) = operands[0].dividedReportingOverflow(by: operands[1])
             if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_rem":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             if operands[1] == .zero { return .skipped(.zeroDivisor) }
             let result = FixedPointDecimal(rawValue: operands[0].rawValue % operands[1].rawValue)
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_abs":
-            guard operands.count == 1 else { return .skipped(.unparseable) }
+            guard operands.count == 1 else { return .skipped(.notRepresentable) }
             let result = FixedPointDecimal(rawValue: abs(operands[0].rawValue))
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_negate":
-            guard operands.count == 1 else { return .skipped(.unparseable) }
+            guard operands.count == 1 else { return .skipped(.notRepresentable) }
             return check(line: lineNumber, got: -operands[0], expected: expected)
 
         case "bid64_quiet_equal":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let cmp: FixedPointDecimal = operands[0] == operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_quiet_less":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let cmp: FixedPointDecimal = operands[0] < operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_quiet_greater":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let cmp: FixedPointDecimal = operands[0] > operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_minnum":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let result = operands[0] <= operands[1] ? operands[0] : operands[1]
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_maxnum":
-            guard operands.count == 2 else { return .skipped(.unparseable) }
+            guard operands.count == 2 else { return .skipped(.notRepresentable) }
             let result = operands[0] >= operands[1] ? operands[0] : operands[1]
             return check(line: lineNumber, got: result, expected: expected)
 
