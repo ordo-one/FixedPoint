@@ -314,6 +314,21 @@ Crash artifacts are saved as `Fuzz/crash-*` files for reproduction.
 - Benchmark infrastructure powered by [package-benchmark](https://github.com/ordo-one/package-benchmark)
 - Entirely built with [Claude Code](https://claude.ai/code) with careful guidance and coaching
 
+### Test Suite Acknowledgements
+
+Arithmetic correctness is validated against established decimal test suites:
+
+- **[General Decimal Arithmetic Test Suite](https://speleotrove.com/decimal/)** by Mike Cowlishaw (IBM) --
+  81,300+ test vectors from the General Decimal Arithmetic specification.
+  [ICU License](Tests/FixedPointDecimalTests/Resources/GDA/LICENSE).
+- **[Arithmetic Debugging Test Vectors](http://eece.cu.edu.eg/~hfahmy/arith_debug/)** by Hossam A. H. Fahmy
+  and Amr Sayed-Ahmed (Cairo University) -- directed test vectors for decimal floating-point operations.
+  These vectors found bugs in IBM decNumber and Intel's decimal math library.
+  [Permissive with attribution](Tests/FixedPointDecimalTests/Resources/Fahmy/LICENSE).
+- **[Intel Decimal Floating-Point Math Library](https://www.intel.com/content/www/us/en/developer/articles/tool/intel-decimal-floating-point-math-library.html)** --
+  decimal64/128 test vectors with BID encoding.
+  [BSD 3-Clause License](Tests/FixedPointDecimalTests/Resources/Intel/LICENSE).
+
 ## License
 
 Apache License 2.0. See [LICENSE](LICENSE) for details.
