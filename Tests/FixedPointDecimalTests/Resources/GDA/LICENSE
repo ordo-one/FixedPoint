@@ -1,0 +1,35 @@
+General Decimal Arithmetic Test Suite
+======================================
+
+Copyright (c) Mike Cowlishaw, 1981, 2010. All rights reserved.
+Parts copyright (c) IBM Corporation, 1981, 2008.
+
+These testcases are experimental ('beta' versions), and they may contain
+errors. They are offered on an as-is basis. In particular, achieving the
+same results as the tests here is not a guarantee that an implementation
+complies with any Standard or specification. The tests are not exhaustive.
+
+Licensed under the ICU License:
+
+  Permission is hereby granted, free of charge, to any person obtaining
+  a copy of this software and associated documentation files (the
+  "Software"), to deal in the Software without restriction, including
+  without limitation the rights to use, copy, modify, merge, publish,
+  distribute, and/or sell copies of the Software, and to permit persons
+  to whom the Software is furnished to do so, provided that the above
+  copyright notice(s) and this permission notice appear in all copies
+  of the Software and that both the above copyright notice(s) and this
+  permission notice appear in supporting documentation.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT
+  OF THIRD PARTY RIGHTS. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR
+  HOLDERS INCLUDED IN THIS NOTICE BE LIABLE FOR ANY CLAIM, OR ANY
+  SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES WHATSOEVER
+  RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF
+  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN
+  CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+Source: https://speleotrove.com/decimal/
+Author: Mike Cowlishaw, mfc@speleotrove.com

@@ -4,8 +4,9 @@ extension FixedPointDecimal: Equatable {
     /// Returns a Boolean value indicating whether two values are equal.
     ///
     /// NaN compares equal to itself, using sentinel semantics (not IEEE 754).
-    /// This is required for `Hashable` and `Comparable` protocol correctness
-    /// (strict total order).
+    /// This provides a strict total order, enabling predictable use in
+    /// `Set`, `Dictionary`, and `sort()` without the pitfalls of IEEE 754
+    /// NaN inequality.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.5"
@@ -66,5 +67,57 @@ extension FixedPointDecimal: Hashable {
     @inlinable
     public func hash(into hasher: inout Hasher) {
         hasher.combine(_storage)
+    }
+}
+
+// MARK: - minimum / maximum
+
+extension FixedPointDecimal {
+    /// Returns the lesser of the two given values.
+    ///
+    /// Unlike the stdlib free function `min(_:_:)` which uses `<` comparison
+    /// (where NaN sorts below all values), this method traps if either
+    /// argument is NaN, ensuring both operands are meaningful values.
+    ///
+    /// ```swift
+    /// FixedPointDecimal.minimum(3, 5)     // 3
+    /// FixedPointDecimal.minimum(-1, 1)    // -1
+    /// FixedPointDecimal.minimum(.nan, 5)  // traps
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - x: A value to compare.
+    ///   - y: Another value to compare.
+    /// - Returns: The lesser of `x` and `y`.
+    /// - Precondition: Neither argument may be NaN.
+    /// - Complexity: O(1) -- single integer comparison after NaN checks.
+    @inlinable
+    public static func minimum(_ x: Self, _ y: Self) -> Self {
+        precondition(!x.isNaN && !y.isNaN, "NaN in FixedPointDecimal minimum")
+        return x._storage <= y._storage ? x : y
+    }
+
+    /// Returns the greater of the two given values.
+    ///
+    /// Unlike the stdlib free function `max(_:_:)` which uses `<` comparison
+    /// (where NaN sorts below all values), this method traps if either
+    /// argument is NaN, ensuring both operands are meaningful values.
+    ///
+    /// ```swift
+    /// FixedPointDecimal.maximum(3, 5)     // 5
+    /// FixedPointDecimal.maximum(-1, 1)    // 1
+    /// FixedPointDecimal.maximum(.nan, 5)  // traps
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - x: A value to compare.
+    ///   - y: Another value to compare.
+    /// - Returns: The greater of `x` and `y`.
+    /// - Precondition: Neither argument may be NaN.
+    /// - Complexity: O(1) -- single integer comparison after NaN checks.
+    @inlinable
+    public static func maximum(_ x: Self, _ y: Self) -> Self {
+        precondition(!x.isNaN && !y.isNaN, "NaN in FixedPointDecimal maximum")
+        return x._storage >= y._storage ? x : y
     }
 }

@@ -337,11 +337,12 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// FixedPointDecimal(123.45).numberOfFractionalDigits       // 2
     /// FixedPointDecimal(100).numberOfFractionalDigits           // 0
     /// FixedPointDecimal(0.00000001).numberOfFractionalDigits    // 8
-    /// FixedPointDecimal.nan.numberOfFractionalDigits // 0
     /// ```
+    ///
+    /// - Precondition: The value must not be NaN.
     @inlinable
     public var numberOfFractionalDigits: Int {
-        guard !isNaN else { return 0 }
+        precondition(!isNaN, "numberOfFractionalDigits called on NaN")
         var frac = abs(_storage % Self.scaleFactor)
         if frac == 0 { return 0 }
         var trailingZeros = 0

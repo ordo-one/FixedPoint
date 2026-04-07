@@ -29,12 +29,41 @@ This value was chosen because:
 - Checking `isNaN` is a single integer comparison
 
 NaN uses **sentinel semantics**, not IEEE 754:
-- `NaN == NaN` returns `true` (required for `Hashable` and `Comparable` correctness)
+- `NaN == NaN` returns `true` (provides a strict total order for collections and sorting)
 - NaN compares less than all non-NaN values (provides a strict total order for sorting)
 - Arithmetic with NaN traps (NaN is signalling — any operation involving NaN is a precondition failure)
 - `init(_ decimal: Decimal)` maps `Decimal.nan` to `.nan`; `Decimal(.nan)` returns `Decimal.nan`
 - `isFinite` returns `false` for NaN, `true` for all other values
 - `sign` returns `.plus` for NaN (NaN is excluded from the negative check)
+
+### NaN Design Rationale
+
+FixedPointDecimal uses **signalling semantics for computation** and **sentinel semantics for observation**:
+
+**Signalling (traps):** Arithmetic (`+`, `-`, `*`, `/`, `%`, negation), value-inspecting properties (`ulp`, `nextUp`, `nextDown`, `magnitude`, `numberOfFractionalDigits`), and rounding. These represent *computation* -- using NaN in a computation is always a logic error in financial code, and trapping surfaces it immediately.
+
+**Sentinel (does not trap):** Comparison (`==`, `<`), hashing, encoding/decoding, `isNaN`, `isFinite`, `description`, `sign`, and conversion to `Double`/`Decimal`. These represent *observation* -- they answer questions about the value without producing new values. This enables:
+
+- Using `FixedPointDecimal` in `Set` and `Dictionary` (requires non-trapping `==` and `hash(into:)`)
+- Sorting arrays that may contain NaN (requires non-trapping `<`)
+- Encoding/decoding data that may include missing values
+- Logging and debugging NaN values
+
+This design was chosen over three alternatives:
+
+1. **Fully quiet NaN** (v1.0 behavior): NaN propagates silently through arithmetic. Rejected because quiet NaN hides bugs in financial calculations.
+2. **Fully signalling NaN** (trap on everything including `==` and `<`): Would prevent use in any generic collection or sorting algorithm. Rejected as impractical.
+3. **IEEE 754 NaN semantics** (`nan != nan`): Breaks the `Hashable` contract in practice (causes duplicate entries in `Set`, unretrievable `Dictionary` keys). While `Float` survives this, it is a known source of bugs, not a precedent to follow.
+
+### NaN vs Optional
+
+If your code never needs to represent missing values inline, consider using `Optional<FixedPointDecimal>` instead of `.nan`. Optional provides compile-time enforcement of the "handle missing" requirement.
+
+NaN exists because our primary use case involves dense arrays with tens or hundreds of millions of price entries where many values may be missing. `Optional<FixedPointDecimal>` has stride 16 (a 1-byte tag rounded up by 8-byte alignment), exactly double the 8-byte stride of `FixedPointDecimal` -- significant when packing data in memory, on disk, or over the wire.
+
+Swift can optimize `Optional` to use no extra space when the wrapped type has "extra inhabitants" -- bit patterns that are the right size but don't represent valid values. For example, `Optional<Bool>` is 1 byte because `Bool` only uses patterns 0 and 1, leaving 254 spare patterns for the `.none` discriminator. Similarly, `Optional<UnsafeRawPointer>` is 8 bytes because the null pointer serves as the extra inhabitant.
+
+However, `FixedPointDecimal` is backed by `Int64`, which uses all 2^64 bit patterns as valid values. Even though we semantically reserve `Int64.min` as a NaN sentinel, **there is currently no Swift mechanism for custom types to declare extra inhabitants**. A [2017 proposal](https://forums.swift.org/t/making-the-sign-of-nans-unspecified-to-enable-enum-layout-optimization/4313) by Joe Groff explored using NaN bit patterns as extra inhabitants for `Float`/`Double`, but this was never implemented -- even `Optional<Double>` is 9 bytes (stride 16) today. Until Swift gains such a mechanism, the NaN sentinel is the only way to achieve 8-byte optional-like semantics for this type.
 
 ## Why @frozen?
 

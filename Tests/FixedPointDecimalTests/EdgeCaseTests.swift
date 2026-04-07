@@ -177,6 +177,19 @@ struct EdgeCaseTests {
         #expect(MemoryLayout<FixedPointDecimal>.alignment == 8)
     }
 
+    @Test("Optional doubles stride to 16 bytes (no extra inhabitants for Int64-backed types)")
+    func optionalMemoryLayout() {
+        // FixedPointDecimal is backed by Int64, which uses all 2^64 bit patterns.
+        // Swift has no mechanism for custom types to declare extra inhabitants,
+        // so FixedPointDecimal? requires a 1-byte tag (size=9, stride=16
+        // due to 8-byte alignment). This is why we provide a NaN sentinel:
+        // arrays of FixedPointDecimal use 8 bytes/element vs 16 bytes/element
+        // for FixedPointDecimal?.
+        #expect(MemoryLayout<FixedPointDecimal?>.size == 9)
+        #expect(MemoryLayout<FixedPointDecimal?>.stride == 16)
+        #expect(MemoryLayout<FixedPointDecimal?>.alignment == 8)
+    }
+
     // MARK: - NaN in Collections
 
     @Test("NaN in Set — insert, contains, count")
@@ -768,5 +781,71 @@ struct EdgeCaseTests {
         let value: FixedPointDecimal = 42.5
         let result = FixedPointDecimal.random(in: value ... value)
         #expect(result == value)
+    }
+
+    // MARK: - minimum / maximum NaN Behavior
+
+    @Test("minimum with NaN lhs traps")
+    func minimumNanLhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(.nan, 5)
+        }
+    }
+
+    @Test("minimum with NaN rhs traps")
+    func minimumNanRhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(5, .nan)
+        }
+    }
+
+    @Test("minimum with both NaN traps")
+    func minimumBothNan() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(.nan, .nan)
+        }
+    }
+
+    @Test("maximum with NaN lhs traps")
+    func maximumNanLhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(.nan, 5)
+        }
+    }
+
+    @Test("maximum with NaN rhs traps")
+    func maximumNanRhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(5, .nan)
+        }
+    }
+
+    @Test("maximum with both NaN traps")
+    func maximumBothNan() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(.nan, .nan)
+        }
+    }
+
+    // MARK: - stdlib min/max NaN Sentinel Behavior
+
+    @Test("stdlib min() with NaN returns NaN (sentinel sorts below all)")
+    func stdlibMinNan() {
+        let result = min(FixedPointDecimal.nan, FixedPointDecimal(5))
+        #expect(result.isNaN)
+    }
+
+    @Test("stdlib max() with NaN returns the non-NaN value")
+    func stdlibMaxNan() {
+        let result = max(FixedPointDecimal.nan, FixedPointDecimal(5))
+        #expect(result == 5 as FixedPointDecimal)
+    }
+
+    @Test("stdlib min() with NaN is symmetric")
+    func stdlibMinNanSymmetry() {
+        let a = min(FixedPointDecimal.nan, FixedPointDecimal(5))
+        let b = min(FixedPointDecimal(5), FixedPointDecimal.nan)
+        #expect(a == b)
+        #expect(a.isNaN)
     }
 }

@@ -1,0 +1,24 @@
+Arithmetic Debugging Test Vectors
+==================================
+
+Copyright Amr Sayed-Ahmed and Hossam A. H. Fahmy.
+Electronics and Electrical Communications Department,
+Faculty of Engineering, Cairo University.
+
+The files provided with test vectors for the decimal FP operations are
+copyrighted to Amr Sayed-Ahmed and Hossam A. H. Fahmy. They are provided
+as is without any implied warranties. The persons who download the files
+are free to use them for any purpose under their own responsibilities.
+The copyright owners provide the files in the hope that they will be useful
+to others but give no guarantees. We would appreciate if you reference our
+work and give us credit for it.
+
+Source: http://eece.cu.edu.eg/~hfahmy/arith_debug/
+
+References:
+- Amr Sayed-Ahmed, Hossam A. H. Fahmy, and Mahmoud Hassan.
+  "Three engines to solve verification constraints of decimal floating-point
+  operations." 44th Asilomar Conference, November 2010.
+- Amr Sayed-Ahmed, Hossam A. H. Fahmy, and Rodina Samy.
+  "Verification of decimal floating-point fused-multiply-add operation."
+  9th ACS/IEEE AICCSA, December 2011.
