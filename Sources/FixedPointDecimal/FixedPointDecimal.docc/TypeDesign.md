@@ -59,7 +59,11 @@ This design was chosen over three alternatives:
 
 If your code never needs to represent missing values inline, consider using `Optional<FixedPointDecimal>` instead of `.nan`. Optional provides compile-time enforcement of the "handle missing" requirement.
 
-NaN exists because our primary use case involves dense arrays with tens or hundreds of millions of price entries where many values may be missing. `Optional` adds 8 bytes overhead per value (16 bytes total vs 8), doubling memory footprint -- significant when packing data in memory, on disk, or over the wire.
+NaN exists because our primary use case involves dense arrays with tens or hundreds of millions of price entries where many values may be missing. `Optional<FixedPointDecimal>` has stride 16 (a 1-byte tag rounded up by 8-byte alignment), exactly double the 8-byte stride of `FixedPointDecimal` -- significant when packing data in memory, on disk, or over the wire.
+
+Swift can optimize `Optional` to use no extra space when the wrapped type has "extra inhabitants" -- bit patterns that are the right size but don't represent valid values. For example, `Optional<Bool>` is 1 byte because `Bool` only uses patterns 0 and 1, leaving 254 spare patterns for the `.none` discriminator. Similarly, `Optional<UnsafeRawPointer>` is 8 bytes because the null pointer serves as the extra inhabitant.
+
+However, `FixedPointDecimal` is backed by `Int64`, which uses all 2^64 bit patterns as valid values. Even though we semantically reserve `Int64.min` as a NaN sentinel, **there is currently no Swift mechanism for custom types to declare extra inhabitants**. A [2017 proposal](https://forums.swift.org/t/making-the-sign-of-nans-unspecified-to-enable-enum-layout-optimization/4313) by Joe Groff explored using NaN bit patterns as extra inhabitants for `Float`/`Double`, but this was never implemented -- even `Optional<Double>` is 9 bytes (stride 16) today. Until Swift gains such a mechanism, the NaN sentinel is the only way to achieve 8-byte optional-like semantics for this type.
 
 ## Why @frozen?
 
