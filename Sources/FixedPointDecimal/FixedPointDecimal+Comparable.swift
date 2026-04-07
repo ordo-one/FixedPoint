@@ -4,8 +4,9 @@ extension FixedPointDecimal: Equatable {
     /// Returns a Boolean value indicating whether two values are equal.
     ///
     /// NaN compares equal to itself, using sentinel semantics (not IEEE 754).
-    /// This is required for `Hashable` and `Comparable` protocol correctness
-    /// (strict total order).
+    /// This provides a strict total order, enabling predictable use in
+    /// `Set`, `Dictionary`, and `sort()` without the pitfalls of IEEE 754
+    /// NaN inequality.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.5"
