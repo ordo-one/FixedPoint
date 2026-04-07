@@ -69,3 +69,55 @@ extension FixedPointDecimal: Hashable {
         hasher.combine(_storage)
     }
 }
+
+// MARK: - minimum / maximum
+
+extension FixedPointDecimal {
+    /// Returns the lesser of the two given values.
+    ///
+    /// Unlike the stdlib free function `min(_:_:)` which uses `<` comparison
+    /// (where NaN sorts below all values), this method traps if either
+    /// argument is NaN, ensuring both operands are meaningful values.
+    ///
+    /// ```swift
+    /// FixedPointDecimal.minimum(3, 5)     // 3
+    /// FixedPointDecimal.minimum(-1, 1)    // -1
+    /// FixedPointDecimal.minimum(.nan, 5)  // traps
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - x: A value to compare.
+    ///   - y: Another value to compare.
+    /// - Returns: The lesser of `x` and `y`.
+    /// - Precondition: Neither argument may be NaN.
+    /// - Complexity: O(1) -- single integer comparison after NaN checks.
+    @inlinable
+    public static func minimum(_ x: Self, _ y: Self) -> Self {
+        precondition(!x.isNaN && !y.isNaN, "NaN in FixedPointDecimal minimum")
+        return x._storage <= y._storage ? x : y
+    }
+
+    /// Returns the greater of the two given values.
+    ///
+    /// Unlike the stdlib free function `max(_:_:)` which uses `<` comparison
+    /// (where NaN sorts below all values), this method traps if either
+    /// argument is NaN, ensuring both operands are meaningful values.
+    ///
+    /// ```swift
+    /// FixedPointDecimal.maximum(3, 5)     // 5
+    /// FixedPointDecimal.maximum(-1, 1)    // 1
+    /// FixedPointDecimal.maximum(.nan, 5)  // traps
+    /// ```
+    ///
+    /// - Parameters:
+    ///   - x: A value to compare.
+    ///   - y: Another value to compare.
+    /// - Returns: The greater of `x` and `y`.
+    /// - Precondition: Neither argument may be NaN.
+    /// - Complexity: O(1) -- single integer comparison after NaN checks.
+    @inlinable
+    public static func maximum(_ x: Self, _ y: Self) -> Self {
+        precondition(!x.isNaN && !y.isNaN, "NaN in FixedPointDecimal maximum")
+        return x._storage >= y._storage ? x : y
+    }
+}

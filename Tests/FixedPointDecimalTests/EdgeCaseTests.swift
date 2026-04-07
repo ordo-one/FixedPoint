@@ -782,4 +782,70 @@ struct EdgeCaseTests {
         let result = FixedPointDecimal.random(in: value ... value)
         #expect(result == value)
     }
+
+    // MARK: - minimum / maximum NaN Behavior
+
+    @Test("minimum with NaN lhs traps")
+    func minimumNanLhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(.nan, 5)
+        }
+    }
+
+    @Test("minimum with NaN rhs traps")
+    func minimumNanRhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(5, .nan)
+        }
+    }
+
+    @Test("minimum with both NaN traps")
+    func minimumBothNan() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.minimum(.nan, .nan)
+        }
+    }
+
+    @Test("maximum with NaN lhs traps")
+    func maximumNanLhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(.nan, 5)
+        }
+    }
+
+    @Test("maximum with NaN rhs traps")
+    func maximumNanRhs() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(5, .nan)
+        }
+    }
+
+    @Test("maximum with both NaN traps")
+    func maximumBothNan() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.maximum(.nan, .nan)
+        }
+    }
+
+    // MARK: - stdlib min/max NaN Sentinel Behavior
+
+    @Test("stdlib min() with NaN returns NaN (sentinel sorts below all)")
+    func stdlibMinNan() {
+        let result = min(FixedPointDecimal.nan, FixedPointDecimal(5))
+        #expect(result.isNaN)
+    }
+
+    @Test("stdlib max() with NaN returns the non-NaN value")
+    func stdlibMaxNan() {
+        let result = max(FixedPointDecimal.nan, FixedPointDecimal(5))
+        #expect(result == 5 as FixedPointDecimal)
+    }
+
+    @Test("stdlib min() with NaN is symmetric")
+    func stdlibMinNanSymmetry() {
+        let a = min(FixedPointDecimal.nan, FixedPointDecimal(5))
+        let b = min(FixedPointDecimal(5), FixedPointDecimal.nan)
+        #expect(a == b)
+        #expect(a.isNaN)
+    }
 }

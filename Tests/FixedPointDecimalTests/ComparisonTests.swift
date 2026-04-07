@@ -183,4 +183,52 @@ struct ComparisonTests {
         #expect(FixedPointDecimal.max == FixedPointDecimal.max)
         #expect(FixedPointDecimal.min == FixedPointDecimal.min)
     }
+
+    // MARK: - minimum / maximum
+
+    @Test("minimum returns lesser value")
+    func minimumBasic() {
+        let a: FixedPointDecimal = 3
+        let b: FixedPointDecimal = 5
+        #expect(FixedPointDecimal.minimum(a, b) == a)
+        #expect(FixedPointDecimal.minimum(b, a) == a)
+    }
+
+    @Test("maximum returns greater value")
+    func maximumBasic() {
+        let a: FixedPointDecimal = 3
+        let b: FixedPointDecimal = 5
+        #expect(FixedPointDecimal.maximum(a, b) == b)
+        #expect(FixedPointDecimal.maximum(b, a) == b)
+    }
+
+    @Test("minimum/maximum with equal values")
+    func minimumMaximumEqual() {
+        let a: FixedPointDecimal = 42
+        let b: FixedPointDecimal = 42
+        #expect(FixedPointDecimal.minimum(a, b) == a)
+        #expect(FixedPointDecimal.maximum(a, b) == a)
+    }
+
+    @Test("minimum/maximum with negative values")
+    func minimumMaximumNegative() {
+        let a: FixedPointDecimal = -10
+        let b: FixedPointDecimal = 5
+        #expect(FixedPointDecimal.minimum(a, b) == a)
+        #expect(FixedPointDecimal.maximum(a, b) == b)
+    }
+
+    @Test("minimum/maximum with .min and .max")
+    func minimumMaximumBoundaries() {
+        #expect(FixedPointDecimal.minimum(.min, .max) == .min)
+        #expect(FixedPointDecimal.maximum(.min, .max) == .max)
+    }
+
+    @Test("minimum/maximum with zero")
+    func minimumMaximumZero() {
+        let pos: FixedPointDecimal = 1
+        let neg: FixedPointDecimal = -1
+        #expect(FixedPointDecimal.minimum(.zero, pos) == .zero)
+        #expect(FixedPointDecimal.maximum(.zero, neg) == .zero)
+    }
 }
