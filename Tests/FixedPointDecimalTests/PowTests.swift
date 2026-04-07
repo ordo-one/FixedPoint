@@ -116,9 +116,11 @@ struct PowTests {
         #expect(FixedPointDecimal(-42).numberOfFractionalDigits == 0)
     }
 
-    @Test("numberOfFractionalDigits NaN")
-    func fractionalDigitsNaN() {
-        #expect(FixedPointDecimal.nan.numberOfFractionalDigits == 0)
+    @Test("numberOfFractionalDigits NaN traps")
+    func fractionalDigitsNaN() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.numberOfFractionalDigits
+        }
     }
 
     @Test("numberOfFractionalDigits negative values")

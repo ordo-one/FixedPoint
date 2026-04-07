@@ -115,6 +115,13 @@ struct PreconditionTests {
         }
     }
 
+    @Test("numberOfFractionalDigits traps on NaN")
+    func numberOfFractionalDigitsNaN() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.nan.numberOfFractionalDigits
+        }
+    }
+
     // MARK: - Arithmetic Preconditions
 
     @Test("Addition traps on overflow")
