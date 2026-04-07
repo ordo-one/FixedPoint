@@ -24,7 +24,8 @@ let package = Package(
         ),
         .testTarget(
             name: "FixedPointDecimalTests",
-            dependencies: ["FixedPointDecimal"]
+            dependencies: ["FixedPointDecimal"],
+            resources: [.copy("Resources")]
         ),
     ]
 )
