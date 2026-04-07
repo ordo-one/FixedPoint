@@ -139,7 +139,7 @@ struct FahmyTestRunner {
     /// Check if a Fahmy operand would lose precision when converted to our type.
     /// A decimal64 significand has up to 16 digits. When combined with the exponent,
     /// if the result has more than 8 fractional digits, it will be rounded and may
-    /// differ from the GDA expected result.
+    /// differ from the Fahmy expected result.
     static func fahmyOperandLosesPrecision(_ token: String) -> Bool {
         let lower = token.lowercased()
         if lower.contains("nan") || lower.contains("inf") { return false }
