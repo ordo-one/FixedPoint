@@ -30,8 +30,8 @@ enum GDAOperation: String {
     case abs, minus, plus
     case compare, comparetotal
     case min, max
-    case tointegralx = "tointegralx"
-    case tointegral = "tointegral"
+    case tointegralx
+    case tointegral
     case power
     case apply // used in base tests
 }
@@ -84,7 +84,7 @@ struct GDATestRunner {
             switch result {
             case .passed:
                 summary.passed += 1
-            case .failed(let id, let detail):
+            case let .failed(id, detail):
                 summary.failed.append((id: id, detail: detail))
             case .skipped(let reason):
                 summary.skipped += 1
@@ -178,14 +178,12 @@ struct GDATestRunner {
         }
 
         // Run the operation
-        return runOperation(id: id, op: opName, operands: operands, expected: expected,
-                            rounding: rounding, conditions: conditions)
+        return runOperation(id: id, op: opName, operands: operands, expected: expected)
     }
 
     private static func runOperation(
         id: String, op: String, operands: [String],
-        expected: FixedPointDecimal, rounding: String,
-        conditions: Set<String>
+        expected: FixedPointDecimal
     ) -> GDATestResult {
         guard let op1 = operands.first.flatMap(parseDecimal) else {
             return .skipped(.notRepresentable)
@@ -269,9 +267,13 @@ struct GDATestRunner {
             }
             // GDA compare returns -1, 0, or 1
             let cmp: FixedPointDecimal
-            if op1 < op2 { cmp = FixedPointDecimal(rawValue: -100_000_000) }
-            else if op1 > op2 { cmp = FixedPointDecimal(rawValue: 100_000_000) }
-            else { cmp = .zero }
+            if op1 < op2 {
+                cmp = FixedPointDecimal(rawValue: -100_000_000)
+            } else if op1 > op2 {
+                cmp = FixedPointDecimal(rawValue: 100_000_000)
+            } else {
+                cmp = .zero
+            }
             return check(id: id, got: cmp, expected: expected)
 
         case "comparetotal":
@@ -281,9 +283,13 @@ struct GDATestRunner {
             // comparetotal gives a total ordering including NaN
             // Our type has a total order by definition (Int64 comparison)
             let cmp: FixedPointDecimal
-            if op1 < op2 { cmp = FixedPointDecimal(rawValue: -100_000_000) }
-            else if op1 > op2 { cmp = FixedPointDecimal(rawValue: 100_000_000) }
-            else { cmp = .zero }
+            if op1 < op2 {
+                cmp = FixedPointDecimal(rawValue: -100_000_000)
+            } else if op1 > op2 {
+                cmp = FixedPointDecimal(rawValue: 100_000_000)
+            } else {
+                cmp = .zero
+            }
             return check(id: id, got: cmp, expected: expected)
 
         case "min":
@@ -443,7 +449,7 @@ struct GDATestRunner {
     private static func tokenize(_ line: String) -> [String] {
         var tokens: [String] = []
         var current = ""
-        var inQuote: Character? = nil
+        var inQuote: Character?
 
         for char in line {
             if let q = inQuote {

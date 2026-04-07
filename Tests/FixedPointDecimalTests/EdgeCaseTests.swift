@@ -181,13 +181,13 @@ struct EdgeCaseTests {
     func optionalMemoryLayout() {
         // FixedPointDecimal is backed by Int64, which uses all 2^64 bit patterns.
         // Swift has no mechanism for custom types to declare extra inhabitants,
-        // so Optional<FixedPointDecimal> requires a 1-byte tag (size=9, stride=16
+        // so FixedPointDecimal? requires a 1-byte tag (size=9, stride=16
         // due to 8-byte alignment). This is why we provide a NaN sentinel:
         // arrays of FixedPointDecimal use 8 bytes/element vs 16 bytes/element
-        // for Optional<FixedPointDecimal>.
-        #expect(MemoryLayout<Optional<FixedPointDecimal>>.size == 9)
-        #expect(MemoryLayout<Optional<FixedPointDecimal>>.stride == 16)
-        #expect(MemoryLayout<Optional<FixedPointDecimal>>.alignment == 8)
+        // for FixedPointDecimal?.
+        #expect(MemoryLayout<FixedPointDecimal?>.size == 9)
+        #expect(MemoryLayout<FixedPointDecimal?>.stride == 16)
+        #expect(MemoryLayout<FixedPointDecimal?>.alignment == 8)
     }
 
     // MARK: - NaN in Collections

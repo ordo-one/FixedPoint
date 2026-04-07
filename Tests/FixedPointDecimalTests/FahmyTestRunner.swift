@@ -37,7 +37,7 @@ struct FahmyTestRunner {
                                    roundingFilter: roundingFilter)
             switch result {
             case .passed: summary.passed += 1
-            case .failed(let line, let detail): summary.failed.append((line: line, detail: detail))
+            case let .failed(line, detail): summary.failed.append((line: line, detail: detail))
             case .skipped(let reason):
                 summary.skipped += 1
                 summary.skipReasons.record(reason)
@@ -54,7 +54,7 @@ struct FahmyTestRunner {
     }
 
     private static func parseLine(_ line: String, lineNumber: Int, expectedOp: Character,
-                                   roundingFilter: String) -> TestResult? {
+                                  roundingFilter: String) -> TestResult? {
         let tokens = line.split(separator: " ").map(String.init)
         guard tokens.count >= 5 else { return nil }
 

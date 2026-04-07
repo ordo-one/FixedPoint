@@ -38,7 +38,7 @@ struct IntelTestRunner {
                                    roundingFilter: roundingFilter)
             switch result {
             case .passed: summary.passed += 1
-            case .failed(let ln, let detail): summary.failed.append((line: ln, detail: detail))
+            case let .failed(ln, detail): summary.failed.append((line: ln, detail: detail))
             case .skipped(let reason):
                 summary.skipped += 1
                 summary.skipReasons.record(reason)
@@ -55,8 +55,8 @@ struct IntelTestRunner {
     }
 
     private static func parseLine(_ line: String, lineNumber: Int,
-                                   operations: Set<String>?,
-                                   roundingFilter: Int) -> TestResult? {
+                                  operations: Set<String>?,
+                                  roundingFilter: Int) -> TestResult? {
         // Tokenize, handling bracketed hex values as single tokens
         let tokens = tokenize(line)
         guard tokens.count >= 4 else { return nil }
@@ -128,7 +128,7 @@ struct IntelTestRunner {
     }
 
     private static func executeOp(funcName: String, operands: [FixedPointDecimal],
-                                   expected: FixedPointDecimal, lineNumber: Int) -> TestResult {
+                                  expected: FixedPointDecimal, lineNumber: Int) -> TestResult {
         switch funcName {
         case "bid64_add":
             guard operands.count == 2 else { return .skipped(.notRepresentable) }
