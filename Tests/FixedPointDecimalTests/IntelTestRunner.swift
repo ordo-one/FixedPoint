@@ -6,10 +6,14 @@ struct IntelTestSummary {
     var passed: Int = 0
     var failed: [(line: Int, detail: String)] = []
     var skipped: Int = 0
+    var skipReasons = SkipReasonCounter()
     var total: Int { passed + failed.count + skipped }
 
     var description: String {
-        "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        var result = "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        let reasons = skipReasons.description
+        if !reasons.isEmpty { result += " [skip reasons: \(reasons)]" }
+        return result
     }
 }
 
@@ -35,7 +39,9 @@ struct IntelTestRunner {
             switch result {
             case .passed: summary.passed += 1
             case .failed(let ln, let detail): summary.failed.append((line: ln, detail: detail))
-            case .skipped: summary.skipped += 1
+            case .skipped(let reason):
+                summary.skipped += 1
+                summary.skipReasons.record(reason)
             case .none: break
             }
         }
@@ -45,7 +51,7 @@ struct IntelTestRunner {
     private enum TestResult {
         case passed
         case failed(line: Int, detail: String)
-        case skipped
+        case skipped(TestSkipReason)
     }
 
     private static func parseLine(_ line: String, lineNumber: Int,
@@ -62,7 +68,7 @@ struct IntelTestRunner {
 
         // Parse rounding mode
         guard let rounding = Int(tokens[1]) else { return nil }
-        guard rounding == roundingFilter else { return .skipped }
+        guard rounding == roundingFilter else { return .skipped(.rounding) }
 
         // Parse status (last token)
         let statusHex = tokens.last!
@@ -75,7 +81,7 @@ struct IntelTestRunner {
         let divByZero = status & 0x04 != 0
         let overflow = status & 0x08 != 0
         let underflow = status & 0x10 != 0
-        if invalid || divByZero || overflow || underflow { return .skipped }
+        if invalid || divByZero || overflow || underflow { return .skipped(.exceptionFlags) }
 
         // Determine operand count based on function
         let opTokens: [String]
@@ -96,16 +102,16 @@ struct IntelTestRunner {
         // Parse operands, checking for precision loss
         var operands: [FixedPointDecimal] = []
         for token in opTokens {
-            if bid64OperandLosesPrecision(token) { return .skipped }
-            guard let value = parseIntelOperand(token) else { return .skipped }
-            if value.isNaN { return .skipped }
+            if bid64OperandLosesPrecision(token) { return .skipped(.precisionLoss) }
+            guard let value = parseIntelOperand(token) else { return .skipped(.outOfRange) }
+            if value.isNaN { return .skipped(.nan) }
             operands.append(value)
         }
 
         // Parse expected result, checking for precision loss
-        if bid64OperandLosesPrecision(expectedToken) { return .skipped }
-        guard let expected = parseIntelOperand(expectedToken) else { return .skipped }
-        if expected.isNaN { return .skipped }
+        if bid64OperandLosesPrecision(expectedToken) { return .skipped(.precisionLoss) }
+        guard let expected = parseIntelOperand(expectedToken) else { return .skipped(.outOfRange) }
+        if expected.isNaN { return .skipped(.nan) }
 
         // Execute operation
         return executeOp(funcName: funcName, operands: operands, expected: expected, lineNumber: lineNumber)
@@ -115,75 +121,75 @@ struct IntelTestRunner {
                                    expected: FixedPointDecimal, lineNumber: Int) -> TestResult {
         switch funcName {
         case "bid64_add":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let (result, overflow) = operands[0].addingReportingOverflow(operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_sub":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let (result, overflow) = operands[0].subtractingReportingOverflow(operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_mul":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let (result, overflow) = operands[0].multipliedReportingOverflow(by: operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_div":
-            guard operands.count == 2 else { return .skipped }
-            if operands[1] == .zero { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[1] == .zero { return .skipped(.zeroDivisor) }
             let (result, overflow) = operands[0].dividedReportingOverflow(by: operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_rem":
-            guard operands.count == 2 else { return .skipped }
-            if operands[1] == .zero { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[1] == .zero { return .skipped(.zeroDivisor) }
             let result = FixedPointDecimal(rawValue: operands[0].rawValue % operands[1].rawValue)
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_abs":
-            guard operands.count == 1 else { return .skipped }
+            guard operands.count == 1 else { return .skipped(.unparseable) }
             let result = FixedPointDecimal(rawValue: abs(operands[0].rawValue))
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_negate":
-            guard operands.count == 1 else { return .skipped }
+            guard operands.count == 1 else { return .skipped(.unparseable) }
             return check(line: lineNumber, got: -operands[0], expected: expected)
 
         case "bid64_quiet_equal":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let cmp: FixedPointDecimal = operands[0] == operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_quiet_less":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let cmp: FixedPointDecimal = operands[0] < operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_quiet_greater":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let cmp: FixedPointDecimal = operands[0] > operands[1] ?
                 FixedPointDecimal(rawValue: 100_000_000) : .zero
             return check(line: lineNumber, got: cmp, expected: expected)
 
         case "bid64_minnum":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let result = operands[0] <= operands[1] ? operands[0] : operands[1]
             return check(line: lineNumber, got: result, expected: expected)
 
         case "bid64_maxnum":
-            guard operands.count == 2 else { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
             let result = operands[0] >= operands[1] ? operands[0] : operands[1]
             return check(line: lineNumber, got: result, expected: expected)
 
         default:
-            return .skipped
+            return .skipped(.unsupportedOp)
         }
     }
 

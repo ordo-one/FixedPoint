@@ -29,6 +29,7 @@ struct GDATests {
             totalSummary.passed += summary.passed
             totalSummary.failed += summary.failed
             totalSummary.skipped += summary.skipped
+            totalSummary.skipReasons.merge(summary.skipReasons)
         }
 
         print("  GDA [\(files.joined(separator: ", "))]: \(totalSummary.description)")

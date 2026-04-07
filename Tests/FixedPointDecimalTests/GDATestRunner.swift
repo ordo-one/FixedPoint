@@ -5,7 +5,7 @@ import FixedPointDecimal
 enum GDATestResult {
     case passed
     case failed(id: String, detail: String)
-    case skipped(id: String, reason: String)
+    case skipped(TestSkipReason)
 }
 
 /// Summary of running a GDA test file.
@@ -13,10 +13,14 @@ struct GDATestSummary {
     var passed: Int = 0
     var failed: [(id: String, detail: String)] = []
     var skipped: Int = 0
+    var skipReasons = SkipReasonCounter()
     var total: Int { passed + failed.count + skipped }
 
     var description: String {
-        "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        var result = "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        let reasons = skipReasons.description
+        if !reasons.isEmpty { result += " [skip reasons: \(reasons)]" }
+        return result
     }
 }
 
@@ -82,8 +86,9 @@ struct GDATestRunner {
                 summary.passed += 1
             case .failed(let id, let detail):
                 summary.failed.append((id: id, detail: detail))
-            case .skipped:
+            case .skipped(let reason):
                 summary.skipped += 1
+                summary.skipReasons.record(reason)
             case .none:
                 break // not a test line
             }
@@ -131,7 +136,7 @@ struct GDATestRunner {
         if conditions.contains("overflow") || conditions.contains("division_by_zero") ||
            conditions.contains("invalid_operation") || conditions.contains("division_impossible") ||
            conditions.contains("division_undefined") || conditions.contains("underflow") {
-            return .skipped(id: id, reason: "condition: \(conditions)")
+            return .skipped(.condition)
         }
 
         // Only run tests with rounding modes we support, and only half_even by default
@@ -142,7 +147,7 @@ struct GDATestRunner {
                                                      "abs", "minus", "plus", "min", "max",
                                                      "copy", "copyabs", "copynegate", "copysign"]
             if !roundingIndependent.contains(opName) {
-                return .skipped(id: id, reason: "rounding mode: \(rounding)")
+                return .skipped(.rounding)
             }
         }
 
@@ -153,13 +158,13 @@ struct GDATestRunner {
         // Precision 16-18 is close enough to match; lower precisions produce
         // different results due to GDA's precision-rounding semantics.
         if precision > 18 || precision < 16 {
-            return .skipped(id: id, reason: "precision \(precision) outside 16-18 range")
+            return .skipped(.precision)
         }
 
         // Parse operands and expected result
         guard let expected = parseDecimal(expectedStr) else {
             // Expected result is unparseable (Infinity, sNaN with payload, etc.)
-            return .skipped(id: id, reason: "unparseable expected: \(expectedStr)")
+            return .skipped(.unparseable)
         }
 
         // For binary operations, verify operands parse without precision loss.
@@ -167,7 +172,7 @@ struct GDATestRunner {
         // input to our type, corrupting the test. Skip these cases.
         for operandStr in operands {
             if operandLosesPrecision(operandStr) {
-                return .skipped(id: id, reason: "operand loses precision: \(operandStr)")
+                return .skipped(.precisionLoss)
             }
         }
 
@@ -182,84 +187,84 @@ struct GDATestRunner {
         conditions: Set<String>
     ) -> GDATestResult {
         guard let op1 = operands.first.flatMap(parseDecimal) else {
-            return .skipped(id: id, reason: "unparseable operand1: \(operands.first ?? "nil")")
+            return .skipped(.unparseable)
         }
 
         switch op {
         case "add":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand (we trap)")
+                return .skipped(.nan)
             }
             let (result, overflow) = op1.addingReportingOverflow(op2)
-            if overflow { return .skipped(id: id, reason: "overflow") }
+            if overflow { return .skipped(.overflow) }
             return check(id: id, got: result, expected: expected)
 
         case "subtract":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand (we trap)")
+                return .skipped(.nan)
             }
             let (result, overflow) = op1.subtractingReportingOverflow(op2)
-            if overflow { return .skipped(id: id, reason: "overflow") }
+            if overflow { return .skipped(.overflow) }
             return check(id: id, got: result, expected: expected)
 
         case "multiply":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand (we trap)")
+                return .skipped(.nan)
             }
             let (result, overflow) = op1.multipliedReportingOverflow(by: op2)
-            if overflow { return .skipped(id: id, reason: "overflow") }
+            if overflow { return .skipped(.overflow) }
             return check(id: id, got: result, expected: expected)
 
         case "divide":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN || op2 == .zero {
-                return .skipped(id: id, reason: "NaN or zero divisor (we trap)")
+                return .skipped(.nan)
             }
             let (result, overflow) = op1.dividedReportingOverflow(by: op2)
-            if overflow { return .skipped(id: id, reason: "overflow") }
+            if overflow { return .skipped(.overflow) }
             return check(id: id, got: result, expected: expected)
 
         case "remainder":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN || op2 == .zero {
-                return .skipped(id: id, reason: "NaN or zero divisor (we trap)")
+                return .skipped(.nan)
             }
             let result = FixedPointDecimal(rawValue: op1.rawValue % op2.rawValue)
             return check(id: id, got: result, expected: expected)
 
         case "abs":
-            if op1.isNaN { return .skipped(id: id, reason: "NaN operand (we trap)") }
+            if op1.isNaN { return .skipped(.nan) }
             let result = FixedPointDecimal(rawValue: Swift.abs(op1.rawValue))
             return check(id: id, got: result, expected: expected)
 
         case "minus":
-            if op1.isNaN { return .skipped(id: id, reason: "NaN operand (we trap)") }
+            if op1.isNaN { return .skipped(.nan) }
             return check(id: id, got: -op1, expected: expected)
 
         case "plus":
             // plus is identity in GDA
-            if op1.isNaN { return .skipped(id: id, reason: "NaN operand (we trap)") }
+            if op1.isNaN { return .skipped(.nan) }
             return check(id: id, got: op1, expected: expected)
 
         case "compare":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand")
+                return .skipped(.nan)
             }
             // GDA compare returns -1, 0, or 1
             let cmp: FixedPointDecimal
@@ -270,7 +275,7 @@ struct GDATestRunner {
 
         case "comparetotal":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             // comparetotal gives a total ordering including NaN
             // Our type has a total order by definition (Int64 comparison)
@@ -282,26 +287,26 @@ struct GDATestRunner {
 
         case "min":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand")
+                return .skipped(.nan)
             }
             let result = op1 <= op2 ? op1 : op2
             return check(id: id, got: result, expected: expected)
 
         case "max":
             guard operands.count >= 2, let op2 = parseDecimal(operands[1]) else {
-                return .skipped(id: id, reason: "unparseable operand2")
+                return .skipped(.unparseable)
             }
             if op1.isNaN || op2.isNaN {
-                return .skipped(id: id, reason: "NaN operand")
+                return .skipped(.nan)
             }
             let result = op1 >= op2 ? op1 : op2
             return check(id: id, got: result, expected: expected)
 
         default:
-            return .skipped(id: id, reason: "unsupported operation: \(op)")
+            return .skipped(.unsupportedOp)
         }
     }
 

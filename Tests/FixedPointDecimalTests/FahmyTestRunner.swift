@@ -6,10 +6,14 @@ struct FahmyTestSummary {
     var passed: Int = 0
     var failed: [(line: Int, detail: String)] = []
     var skipped: Int = 0
+    var skipReasons = SkipReasonCounter()
     var total: Int { passed + failed.count + skipped }
 
     var description: String {
-        "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        var result = "\(passed) passed, \(failed.count) failed, \(skipped) skipped (total: \(total))"
+        let reasons = skipReasons.description
+        if !reasons.isEmpty { result += " [skip reasons: \(reasons)]" }
+        return result
     }
 }
 
@@ -34,7 +38,9 @@ struct FahmyTestRunner {
             switch result {
             case .passed: summary.passed += 1
             case .failed(let line, let detail): summary.failed.append((line: line, detail: detail))
-            case .skipped: summary.skipped += 1
+            case .skipped(let reason):
+                summary.skipped += 1
+                summary.skipReasons.record(reason)
             case .none: break
             }
         }
@@ -44,7 +50,7 @@ struct FahmyTestRunner {
     private enum TestResult {
         case passed
         case failed(line: Int, detail: String)
-        case skipped
+        case skipped(TestSkipReason)
     }
 
     private static func parseLine(_ line: String, lineNumber: Int, expectedOp: Character,
@@ -60,7 +66,7 @@ struct FahmyTestRunner {
 
         // Parse rounding mode
         let rounding = tokens[1]
-        guard rounding == roundingFilter else { return .skipped }
+        guard rounding == roundingFilter else { return .skipped(.rounding) }
 
         // Find arrow
         guard let arrowIdx = tokens.firstIndex(of: "->") else { return nil }
@@ -78,53 +84,53 @@ struct FahmyTestRunner {
 
         // Skip if flags indicate conditions we can't handle
         if flags.contains("o") || flags.contains("z") || flags.contains("i") || flags.contains("u") {
-            return .skipped
+            return .skipped(.exceptionFlags)
         }
 
         // Parse operands, checking for precision loss
         var operands: [FixedPointDecimal] = []
         for token in operandTokens {
-            if fahmyOperandLosesPrecision(token) { return .skipped }
-            guard let value = parseFahmyOperand(token) else { return .skipped }
+            if fahmyOperandLosesPrecision(token) { return .skipped(.precisionLoss) }
+            guard let value = parseFahmyOperand(token) else { return .skipped(.outOfRange) }
             operands.append(value)
         }
 
         // Parse expected result, checking for precision loss
-        if fahmyOperandLosesPrecision(expectedToken) { return .skipped }
-        guard let expected = parseFahmyOperand(expectedToken) else { return .skipped }
+        if fahmyOperandLosesPrecision(expectedToken) { return .skipped(.precisionLoss) }
+        guard let expected = parseFahmyOperand(expectedToken) else { return .skipped(.outOfRange) }
 
         // Execute operation
         switch op {
         case "+":
-            guard operands.count == 2 else { return .skipped }
-            if operands[0].isNaN || operands[1].isNaN { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].addingReportingOverflow(operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "-":
-            guard operands.count == 2 else { return .skipped }
-            if operands[0].isNaN || operands[1].isNaN { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].subtractingReportingOverflow(operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "*":
-            guard operands.count == 2 else { return .skipped }
-            if operands[0].isNaN || operands[1].isNaN { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[0].isNaN || operands[1].isNaN { return .skipped(.nan) }
             let (result, overflow) = operands[0].multipliedReportingOverflow(by: operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         case "/":
-            guard operands.count == 2 else { return .skipped }
-            if operands[0].isNaN || operands[1].isNaN || operands[1] == .zero { return .skipped }
+            guard operands.count == 2 else { return .skipped(.unparseable) }
+            if operands[0].isNaN || operands[1].isNaN || operands[1] == .zero { return .skipped(.nan) }
             let (result, overflow) = operands[0].dividedReportingOverflow(by: operands[1])
-            if overflow { return .skipped }
+            if overflow { return .skipped(.overflow) }
             return check(line: lineNumber, got: result, expected: expected)
 
         default:
-            return .skipped
+            return .skipped(.unsupportedOp)
         }
     }
 
