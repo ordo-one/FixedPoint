@@ -524,47 +524,58 @@ struct ArithmeticTests {
 
     // MARK: - Exhaustive Small Integer Arithmetic (inspired by swift-foundation maths)
 
-    @Test("Exhaustive small integer multiplication",
-          arguments: Array(-5...10), Array(-5...10))
-    func exhaustiveSmallMul(lhs: Int, rhs: Int) {
-        let a = FixedPointDecimal(Int64(lhs))
-        let b = FixedPointDecimal(Int64(rhs))
-        let expected = FixedPointDecimal(Int64(lhs * rhs))
-        #expect(a * b == expected, "\(lhs) * \(rhs)")
+    @Test("Exhaustive small integer multiplication")
+    func exhaustiveSmallMul() {
+        for lhs in -5...10 {
+            for rhs in -5...10 {
+                let a = FixedPointDecimal(Int64(lhs))
+                let b = FixedPointDecimal(Int64(rhs))
+                let expected = FixedPointDecimal(Int64(lhs * rhs))
+                #expect(a * b == expected, "\(lhs) * \(rhs)")
+            }
+        }
     }
 
-    @Test("Exhaustive small integer addition",
-          arguments: Array(-5...10), Array(-5...10))
-    func exhaustiveSmallAdd(lhs: Int, rhs: Int) {
-        let a = FixedPointDecimal(Int64(lhs))
-        let b = FixedPointDecimal(Int64(rhs))
-        let expected = FixedPointDecimal(Int64(lhs + rhs))
-        #expect(a + b == expected, "\(lhs) + \(rhs)")
+    @Test("Exhaustive small integer addition")
+    func exhaustiveSmallAdd() {
+        for lhs in -5...10 {
+            for rhs in -5...10 {
+                let a = FixedPointDecimal(Int64(lhs))
+                let b = FixedPointDecimal(Int64(rhs))
+                let expected = FixedPointDecimal(Int64(lhs + rhs))
+                #expect(a + b == expected, "\(lhs) + \(rhs)")
+            }
+        }
     }
 
-    @Test("Exhaustive small integer subtraction",
-          arguments: Array(-5...10), Array(-5...10))
-    func exhaustiveSmallSub(lhs: Int, rhs: Int) {
-        let a = FixedPointDecimal(Int64(lhs))
-        let b = FixedPointDecimal(Int64(rhs))
-        let expected = FixedPointDecimal(Int64(lhs - rhs))
-        #expect(a - b == expected, "\(lhs) - \(rhs)")
+    @Test("Exhaustive small integer subtraction")
+    func exhaustiveSmallSub() {
+        for lhs in -5...10 {
+            for rhs in -5...10 {
+                let a = FixedPointDecimal(Int64(lhs))
+                let b = FixedPointDecimal(Int64(rhs))
+                let expected = FixedPointDecimal(Int64(lhs - rhs))
+                #expect(a - b == expected, "\(lhs) - \(rhs)")
+            }
+        }
     }
 
-    @Test("Exhaustive small integer division",
-          arguments: Array(-5...10), Array((-5...(-1)).map { $0 } + (1...10).map { $0 }))
-    func exhaustiveSmallDiv(lhs: Int, rhs: Int) {
-        let a = FixedPointDecimal(Int64(lhs))
-        let b = FixedPointDecimal(Int64(rhs))
-        // Integer division should match for exact multiples
-        let (quot, rem) = lhs.quotientAndRemainder(dividingBy: rhs)
-        if rem == 0 {
-            let expected = FixedPointDecimal(Int64(quot))
-            #expect(a / b == expected, "\(lhs) / \(rhs)")
-        } else {
-            // For non-exact division, verify truncation toward zero
-            let result = a / b
-            #expect(result.integerPart == Int64(quot), "\(lhs) / \(rhs) integer part")
+    @Test("Exhaustive small integer division")
+    func exhaustiveSmallDiv() {
+        let divisors = Array(-5...(-1)) + Array(1...10)
+        for lhs in -5...10 {
+            for rhs in divisors {
+                let a = FixedPointDecimal(Int64(lhs))
+                let b = FixedPointDecimal(Int64(rhs))
+                let (quot, rem) = lhs.quotientAndRemainder(dividingBy: rhs)
+                if rem == 0 {
+                    let expected = FixedPointDecimal(Int64(quot))
+                    #expect(a / b == expected, "\(lhs) / \(rhs)")
+                } else {
+                    let result = a / b
+                    #expect(result.integerPart == Int64(quot), "\(lhs) / \(rhs) integer part")
+                }
+            }
         }
     }
 
