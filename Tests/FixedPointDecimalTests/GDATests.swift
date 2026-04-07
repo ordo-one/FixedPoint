@@ -31,6 +31,8 @@ struct GDATests {
             totalSummary.skipped += summary.skipped
         }
 
+        print("  GDA [\(files.joined(separator: ", "))]: \(totalSummary.description)")
+
         for failure in totalSummary.failed {
             Issue.record("GDA \(failure.id): \(failure.detail)", sourceLocation: sourceLocation)
         }

@@ -24,6 +24,8 @@ struct IntelTests {
         }
         let summary = try IntelTestRunner.run(contentsOf: url, operations: operations)
 
+        print("  Intel [\(operations.sorted().joined(separator: ", "))]: \(summary.description)")
+
         for failure in summary.failed {
             Issue.record("Intel line \(failure.line): \(failure.detail)", sourceLocation: sourceLocation)
         }

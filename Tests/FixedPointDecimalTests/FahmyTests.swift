@@ -25,6 +25,8 @@ struct FahmyTests {
         }
         let summary = try FahmyTestRunner.run(contentsOf: url, operation: operation)
 
+        print("  Fahmy [\(file)]: \(summary.description)")
+
         for failure in summary.failed {
             Issue.record("Fahmy line \(failure.line): \(failure.detail)", sourceLocation: sourceLocation)
         }
