@@ -397,7 +397,7 @@ struct GDATestRunner {
     /// our type (which has exactly 8 fractional digits). Returns true if the
     /// operand has more than 8 fractional digits or more significant digits
     /// than our type can represent.
-    private static func operandLosesPrecision(_ str: String) -> Bool {
+    static func operandLosesPrecision(_ str: String) -> Bool {
         var s = str
         if s.hasPrefix("'") && s.hasSuffix("'") { s = String(s.dropFirst().dropLast()) }
         if s.hasPrefix("\"") && s.hasSuffix("\"") { s = String(s.dropFirst().dropLast()) }
