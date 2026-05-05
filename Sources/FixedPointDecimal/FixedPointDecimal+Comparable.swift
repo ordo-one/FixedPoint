@@ -70,7 +70,7 @@ extension FixedPointDecimal: Hashable {
     }
 
     @inlinable
-    public var hashValue: Int {
+    public var hashValue: Int { // swiftlint:disable:this legacy_hashing
         var hasher = Hasher()
         hash(into: &hasher)
         return hasher.finalize()
