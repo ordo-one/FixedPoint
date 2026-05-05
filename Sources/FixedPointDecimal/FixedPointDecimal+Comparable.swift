@@ -68,6 +68,13 @@ extension FixedPointDecimal: Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(_storage)
     }
+
+    @inlinable
+    public var hashValue: Int { // swiftlint:disable:this legacy_hashing
+        var hasher = Hasher()
+        hash(into: &hasher)
+        return hasher.finalize()
+    }
 }
 
 // MARK: - minimum / maximum

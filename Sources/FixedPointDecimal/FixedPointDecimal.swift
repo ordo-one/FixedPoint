@@ -442,6 +442,10 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     }
 }
 
+// MARK: - RawRepresentable
+
+extension FixedPointDecimal: RawRepresentable {}
+
 // MARK: - AtomicRepresentable
 
 /// Conformance to `AtomicRepresentable`, enabling lock-free atomic operations
