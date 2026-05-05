@@ -32,7 +32,7 @@ public import Synchronization
 /// Wrapping operators (`&+`, `&-`) and overflow-reporting methods are available
 /// for performance-critical code paths.
 @frozen
-public struct FixedPointDecimal: Sendable, BitwiseCopyable {
+public struct FixedPointDecimal: Sendable, BitwiseCopyable, RawRepresentable {
     @usableFromInline
     internal var _storage: Int64
 
