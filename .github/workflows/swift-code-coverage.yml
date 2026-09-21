@@ -28,19 +28,24 @@ jobs:
     - name: Run tests
       continue-on-error: true
       run: |
-        [ -d Tests ] && swift test --parallel --enable-code-coverage
+        # The native build system keeps the single <Package>PackageTests.xctest executable that the export
+        # step reads; the Swift Build backend, the default since 6.4, emits per-target runner and .so files.
+        [ -d Tests ] && swift test --parallel --enable-code-coverage --build-system native
 
     - name: Export code coverage
       run: |
-         xctest_binary=".build/debug/${{ github.event.repository.name }}PackageTests.xctest"
-         if [ ! -f ${xctest_binary} ]; then
+         # The executable carries the package name, not the repository name.
+         xctest_binary=$(find .build/debug/ -maxdepth 1 -type f -name "*PackageTests.xctest" | head -1)
+         if [ -z "${xctest_binary}" ]; then
              xctest_binary=$(find .build/debug/ -type f -name "*.xctest" | tail -1)
-             echo "Will llvm-cov '${xctest_binary}'"
          fi
-
-         if [ -f ${xctest_binary} ]; then
-             llvm-cov export -format="lcov" ${xctest_binary} -instr-profile .build/debug/codecov/default.profdata > info.lcov
+         if [ -z "${xctest_binary}" ]; then
+             echo "No test executable found under .build/debug:"
+             ls -la .build/debug/
+             exit 1
          fi
+         echo "Will llvm-cov '${xctest_binary}'"
+         llvm-cov export -format="lcov" "${xctest_binary}" -instr-profile .build/debug/codecov/default.profdata > info.lcov
 
     - name: Upload codecov
       uses: codecov/codecov-action@v5
