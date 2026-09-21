@@ -38,8 +38,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
 
     /// The number of fractional decimal digits (always 8).
     ///
-    /// Public so formatting and parsing code in other modules can size fraction lengths, quantums
-    /// and exponents from the type instead of hard-coding 8.
+    /// Use this value to derive fractional digit limits and decimal scaling exponents.
     @inlinable
     public static var fractionalDigitCount: Int { 8 }
 

@@ -65,6 +65,7 @@ All arithmetic operations compile to native integer instructions with zero heap 
 - ``FixedPointDecimal/min``
 - ``FixedPointDecimal/leastNonzeroMagnitude``
 - ``FixedPointDecimal/greatestFiniteMagnitude``
+- ``FixedPointDecimal/fractionalDigitCount``
 - ``FixedPointDecimal/isNaN``
 - ``FixedPointDecimal/isFinite``
 - ``FixedPointDecimal/sign``
