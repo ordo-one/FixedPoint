@@ -57,8 +57,12 @@ jobs:
         continue-on-error: true
         run: |
           echo $(date) >> $GITHUB_STEP_SUMMARY
+          # The step runs under `bash -e`: without the guard a non-zero exit from the check aborts the
+          # step here, before the mapping below, and every deviation reports as an unknown failure.
+          set +e
           swift package ${BENCHMARK_PACKAGE_PATH} benchmark baseline check main pull_request --format markdown >> $GITHUB_STEP_SUMMARY 2>benchmark_stderr
           rawExitStatus=$?
+          set -e
           cat benchmark_stderr >&2
           # SwiftPM maps all non-zero plugin exit codes to 1, so parse stderr to recover the real status
           if [ "$rawExitStatus" -eq 0 ]; then
@@ -81,11 +85,16 @@ jobs:
             echo "_Pull request is the same as baseline_"
             echo "[Pull request benchmark comparison [${{ matrix.os }}] with 'main' run at $(date -Iseconds)]($BENCHMARK_RUN_URL)"
           } > benchmark_comment
-      - if: ${{ env.exitStatus == '1' }}
+      - if: ${{ env.exitStatus != '0' && env.exitStatus != '2' && env.exitStatus != '4' }}
         name: Pull request comment text failure
         run: |
+          case "${{ env.exitStatus }}" in
+            3) text="_Pull request benchmark crashed_" ;;
+            5) text="_Pull request benchmark baseline not found_" ;;
+            *) text="_Pull request had an unknown failure (exit status ${{ env.exitStatus }})_" ;;
+          esac
           {
-            echo "_Pull request had an unknown failure_"
+            echo "$text"
             echo "[Pull request benchmark comparison [${{ matrix.os }}] with 'main' run at $(date -Iseconds)]($BENCHMARK_RUN_URL)"
           } > benchmark_comment
       - if: ${{ env.exitStatus == '2' }}
