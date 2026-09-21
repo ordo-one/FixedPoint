@@ -37,8 +37,10 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     internal var _storage: Int64
 
     /// The number of fractional decimal digits (always 8).
-    @usableFromInline
-    internal static var fractionalDigitCount: Int { 8 }
+    ///
+    /// Use this value to derive fractional digit limits and decimal scaling exponents.
+    @inlinable
+    public static var fractionalDigitCount: Int { 8 }
 
     /// The scale factor: 10⁸ = 100,000,000.
     @usableFromInline
