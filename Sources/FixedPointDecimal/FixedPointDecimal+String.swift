@@ -164,100 +164,76 @@ extension FixedPointDecimal {
 // MARK: - Internal Formatting Helper
 
 extension FixedPointDecimal {
-    /// Writes the formatted decimal string into a buffer.
+    /// The scratch space `_writeDescription(into:)` needs.
     ///
-    /// Writes directly into the caller's `UnsafeMutableBufferPointer<UInt8>`
-    /// to keep the entire format path allocation-free.
+    /// The longest description is 21 bytes: a sign, 11 integer digits,
+    /// a decimal point and 8 fractional digits.
+    internal static var _descriptionCapacity: Int { 24 }
+
+    /// Writes the decimal text right-aligned into a scratch buffer.
     ///
-    /// - Parameters:
-    ///   - buffer: The output buffer to write UTF-8 bytes into.
-    ///   - offset: The current write position; advanced past the last byte written.
-    ///   - fractionDigits: If nil, trailing fractional zeros are trimmed.
-    ///     If specified, exactly that many fractional digits are written.
-    @usableFromInline
-    internal func _writeFormatted(
-        into buffer: UnsafeMutableBufferPointer<UInt8>,
-        startingAt offset: inout Int,
-        fractionDigits: Int?
-    ) {
-        precondition(!isNaN, "_writeFormatted called on NaN; callers must check isNaN first")
-        let isNeg = _storage < 0
-        let absVal = isNeg ? (0 &- _storage) : _storage
-        let intPart = absVal / Self.scaleFactor
-        let fracPart = absVal % Self.scaleFactor
+    /// The integer digits end just before index 15, the decimal point (when
+    /// there is a fraction) is index 15 and the fractional digits follow, so
+    /// no digit count is needed up front. Digits are produced two at a time
+    /// from a table of the pairs "00" through "99", and trailing fractional
+    /// zeros are trimmed by scanning the bytes already written.
+    ///
+    /// - Parameter buffer: Scratch space of at least `_descriptionCapacity` bytes.
+    /// - Returns: The range of `buffer` that holds the UTF-8 text.
+    /// - Precondition: The value must not be NaN.
+    internal func _writeDescription(into buffer: UnsafeMutablePointer<UInt8>) -> Range<Int> {
+        precondition(!isNaN, "_writeDescription called on NaN; callers must check isNaN first")
+        let pairs: StaticString = """
+        0001020304050607080910111213141516171819202122232425262728293031323334353637383940414243444546474849\
+        5051525354555657585960616263646566676869707172737475767778798081828384858687888990919293949596979899
+        """
+        let pair = pairs.utf8Start
+        let magnitude = _storage.magnitude
+        var intPart = magnitude / UInt64(Self.scaleFactor)
+        var fracPart = UInt32(truncatingIfNeeded: magnitude % UInt64(Self.scaleFactor))
 
-        // Sign
-        if isNeg {
-            buffer[offset] = UInt8(ascii: "-")
-            offset &+= 1
+        // Fractional part: all 8 digits, then drop the trailing zeros.
+        var end = 15
+        if fracPart != 0 {
+            var index = 24
+            for _ in 0 ..< 4 {
+                let quotient = fracPart / 100
+                let twoDigits = Int(truncatingIfNeeded: fracPart &- quotient &* 100)
+                index &-= 2
+                buffer[index] = pair[2 &* twoDigits]
+                buffer[index &+ 1] = pair[2 &* twoDigits &+ 1]
+                fracPart = quotient
+            }
+            end = 24
+            while buffer[end &- 1] == UInt8(ascii: "0") { end &-= 1 }
+            buffer[15] = UInt8(ascii: ".")
         }
 
-        // Integer part: write digits left-to-right using positional division.
-        // Standard library String(Int) allocates; this writes directly into
-        // the caller's buffer to keep the entire format path allocation-free.
-        //
-        // Algorithm: for intPart = 4217
-        //   1. Count digits: 4 → divisor = 1000
-        //   2. Emit 4217/1000 = 4, remainder 217, divisor = 100
-        //   3. Emit 217/100  = 2, remainder 17,  divisor = 10
-        //   4. Emit 17/10    = 1, remainder 7,   divisor = 1
-        //   5. Emit 7/1      = 7, remainder 0,   divisor = 0 → done
-        if intPart == 0 {
-            buffer[offset] = UInt8(ascii: "0")
-            offset &+= 1
+        // Integer part, right to left.
+        var start = 15
+        while intPart >= 100 {
+            let quotient = intPart / 100
+            let twoDigits = Int(truncatingIfNeeded: intPart &- quotient &* 100)
+            start &-= 2
+            buffer[start] = pair[2 &* twoDigits]
+            buffer[start &+ 1] = pair[2 &* twoDigits &+ 1]
+            intPart = quotient
+        }
+        if intPart >= 10 {
+            let twoDigits = Int(truncatingIfNeeded: intPart)
+            start &-= 2
+            buffer[start] = pair[2 &* twoDigits]
+            buffer[start &+ 1] = pair[2 &* twoDigits &+ 1]
         } else {
-            var digitCount = 0
-            var tmp = intPart
-            while tmp > 0 { digitCount &+= 1; tmp /= 10 }
-            var divisor: Int64 = 1
-            for _ in 1..<digitCount { divisor &*= 10 }
-
-            var remaining = intPart
-            while divisor > 0 {
-                buffer[offset] = UInt8(remaining / divisor) &+ UInt8(ascii: "0")
-                offset &+= 1
-                remaining %= divisor
-                divisor /= 10
-            }
+            start &-= 1
+            buffer[start] = UInt8(truncatingIfNeeded: intPart) &+ UInt8(ascii: "0")
         }
 
-        // Determine how many fractional digits to write
-        let digitsToWrite: Int
-        if let digits = fractionDigits {
-            if digits == 0 { return }
-            digitsToWrite = digits
-        } else {
-            if fracPart == 0 { return }
-            // Trim trailing zeros: count significant fractional digits
-            var trimmed = fracPart
-            var trailingZeros = 0
-            while trimmed % 10 == 0 {
-                trimmed /= 10
-                trailingZeros &+= 1
-            }
-            digitsToWrite = Self.fractionalDigitCount - trailingZeros
+        if _storage < 0 {
+            start &-= 1
+            buffer[start] = UInt8(ascii: "-")
         }
-
-        // Decimal point
-        buffer[offset] = UInt8(ascii: ".")
-        offset &+= 1
-
-        // Fractional digits: write left-to-right using positional extraction
-        let actualDigits = Swift.min(digitsToWrite, Self.fractionalDigitCount)
-        var fracDivisor = Self._powerOf10(Self.fractionalDigitCount - 1) // 10_000_000
-        for _ in 0..<actualDigits {
-            buffer[offset] = UInt8((fracPart / fracDivisor) % 10) &+ UInt8(ascii: "0")
-            offset &+= 1
-            fracDivisor /= 10
-        }
-
-        // Pad with zeros if requested precision exceeds 8
-        if digitsToWrite > Self.fractionalDigitCount {
-            for _ in Self.fractionalDigitCount..<digitsToWrite {
-                buffer[offset] = UInt8(ascii: "0")
-                offset &+= 1
-            }
-        }
+        return start ..< end
     }
 }
 
@@ -276,10 +252,14 @@ extension FixedPointDecimal: CustomStringConvertible {
     /// ```
     public var description: String {
         if isNaN { return "nan" }
-        return String(unsafeUninitializedCapacity: 24) { buf in
-            var offset = 0
-            _writeFormatted(into: buf, startingAt: &offset, fractionDigits: nil)
-            return offset
+        // The text is built on the stack and the string is created at its exact
+        // length, so a result that fits a small string (15 bytes on 64-bit
+        // platforms) needs no heap allocation.
+        return withUnsafeTemporaryAllocation(of: UInt8.self, capacity: Self._descriptionCapacity) { scratch in
+            let buffer = scratch.baseAddress.unsafelyUnwrapped
+            let range = _writeDescription(into: buffer)
+            let text = UnsafeBufferPointer(start: buffer + range.lowerBound, count: range.count)
+            return String(decoding: text, as: UTF8.self) // swiftlint:disable:this optional_data_string_conversion
         }
     }
 }
