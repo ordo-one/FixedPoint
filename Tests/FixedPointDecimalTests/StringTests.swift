@@ -175,6 +175,58 @@ struct StringTests {
         #expect(FixedPointDecimal.nan.description == "nan")
     }
 
+    /// The text built from `String(UInt64)` pieces, independent of the formatter under test.
+    private static func referenceDescription(rawValue: Int64) -> String {
+        let magnitude = rawValue.magnitude
+        var fraction = String(magnitude % 100_000_000)
+        fraction = String(repeating: "0", count: 8 - fraction.count) + fraction
+        while fraction.hasSuffix("0") {
+            fraction.removeLast()
+        }
+        let digits = String(magnitude / 100_000_000) + (fraction.isEmpty ? "" : "." + fraction)
+        return rawValue < 0 ? "-" + digits : digits
+    }
+
+    @Test("Format matches a reference at every digit-count boundary and for every digit pair")
+    func formatBoundaries() {
+        var rawValues: [Int64] = [0, .max, .min + 1]
+        var power: Int64 = 1
+        for _ in 0 ... 18 {
+            // Around each power of ten: 9...9, 10...0, 10...1, 90...0, and 99...9 where it fits.
+            var candidates = [power - 1, power, power + 1, power * 9]
+            let (allNines, overflow) = (power * 9).addingReportingOverflow(power - 1)
+            if !overflow {
+                candidates.append(allNines)
+            }
+            for candidate in candidates {
+                rawValues.append(candidate)
+                rawValues.append(-candidate)
+            }
+            if power < 1_000_000_000_000_000_000 {
+                power *= 10
+            }
+        }
+        // Every two-digit pair at every pair position, alone and below a leading 1.
+        var position: Int64 = 1
+        for _ in 0 ..< 9 {
+            for pair: Int64 in 0 ... 99 {
+                rawValues.append(pair * position)
+                rawValues.append(-(pair * position + position * 100))
+            }
+            position *= 100
+        }
+        for rawValue in rawValues {
+            let value = FixedPointDecimal(rawValue: rawValue)
+            #expect(value.description == Self.referenceDescription(rawValue: rawValue), "rawValue \(rawValue)")
+        }
+    }
+
+    @Test("Format values with 11 integer digits")
+    func formatElevenIntegerDigits() {
+        #expect(FixedPointDecimal(rawValue: -9_223_372_036_800_000_000).description == "-92233720368")
+        #expect(FixedPointDecimal(rawValue: 1_000_000_000_010_000_000).description == "10000000000.1")
+    }
+
     @Test("Debug description")
     func debugDescription() {
         let value: FixedPointDecimal = 42
