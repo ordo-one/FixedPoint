@@ -312,6 +312,18 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
+    // Runtime exponents, so the power-of-10 lookup can't be constant-folded.
+    Benchmark("FixedPointDecimal init(significand:exponent:) runtime exponent",
+              configuration: defaultConfiguration) { benchmark in
+        let exponents = [-10, -8, -6, -4, -2, 0, 1, 2]
+        var i = 0
+
+        for _ in benchmark.scaledIterations {
+            blackHole(FixedPointDecimal(significand: 12345, exponent: exponents[i % exponents.count]))
+            i &+= 1
+        }
+    }
+
     // MARK: - pow(10, n) vs pow(x, n)
 
     Benchmark("FixedPointDecimal pow(10, n)", configuration: defaultConfiguration) { benchmark in
@@ -371,6 +383,20 @@ let benchmarks: @Sendable () -> Void = {
         for _ in benchmark.scaledIterations {
             blackHole(accumulated.rounded(scale: 2))
             accumulated = accumulated + delta
+        }
+    }
+
+    // Runtime scales, so the power-of-10 lookup can't be constant-folded.
+    Benchmark("FixedPointDecimal rounded(scale:) runtime scale", configuration: defaultConfiguration) { benchmark in
+        var accumulated: FixedPointDecimal = 123.45678912
+        let delta = FixedPointDecimal(0.00000001)
+        let scales = [0, 1, 2, 3, 4, 5, 6, 7]
+        var i = 0
+
+        for _ in benchmark.scaledIterations {
+            blackHole(accumulated.rounded(scale: scales[i % scales.count]))
+            accumulated = accumulated + delta
+            i &+= 1
         }
     }
 
