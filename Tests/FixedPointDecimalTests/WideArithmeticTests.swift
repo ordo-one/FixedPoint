@@ -179,6 +179,22 @@ struct WideArithmeticTests {
         }
     }
 
+    @Test("A magnitude of exactly 2⁶³ overflows for either sign; one less fits")
+    func magnitudeExactlyTwoToTheSixtyThree() {
+        // 2⁶² × 2.0 and 2⁶² ÷ 0.5 are exactly 2⁶³ (raw). Negated that would be Int64.min, the NaN
+        // sentinel, so it must overflow rather than be returned. The differential checks can't see a
+        // wrong flag here: they only call the trapping operators when the reference fits, and the
+        // reporting variants also flag `result == .min`.
+        let twoToTheSixtyTwo: Int64 = 1 << 62
+        #expect(FixedPointDecimal._scaledProductMagnitude(twoToTheSixtyTwo, 200_000_000).overflow)
+        #expect(FixedPointDecimal._scaledProductMagnitude(-twoToTheSixtyTwo, 200_000_000).overflow)
+        #expect(FixedPointDecimal._scaledQuotientMagnitude(twoToTheSixtyTwo, 50_000_000) == nil)
+        #expect(FixedPointDecimal._scaledQuotientMagnitude(-twoToTheSixtyTwo, 50_000_000) == nil)
+        // 2⁶³ − 2: fits.
+        #expect(!FixedPointDecimal._scaledProductMagnitude(twoToTheSixtyTwo - 1, 200_000_000).overflow)
+        #expect(FixedPointDecimal._scaledQuotientMagnitude(twoToTheSixtyTwo - 1, 50_000_000) == UInt64(Int64.max) - 1)
+    }
+
     @Test("A quotient of exactly UInt64.max that rounds up is reported as overflow")
     func roundingWrapsUInt64Max() {
         // The unrounded magnitude is 2⁶⁴ − 1 and rounding adds 1, which wraps to 0 in 64 bits.
