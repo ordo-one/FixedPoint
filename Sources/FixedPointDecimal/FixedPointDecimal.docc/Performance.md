@@ -4,7 +4,7 @@ Benchmark results, methodology, and memory layout analysis.
 
 ## Overview
 
-All benchmarks run using [package-benchmark](https://github.com/ordo-one/package-benchmark) in release mode with `.mega` scaling factor (1,000,000 iterations per sample). Measured on Apple M4 Max, macOS 15, Swift 6.2.
+All benchmarks run using [benchmark](https://github.com/ordo-one/benchmark) in release mode with `.mega` scaling factor (1,000,000 iterations per sample). Measured on Apple M4 Max, macOS 15, Swift 6.2.
 
 ## Wall Clock (per operation)
 

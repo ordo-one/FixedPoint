@@ -11,18 +11,18 @@ let package = Package(
     ],
     dependencies: [
         .package(path: ".."),
-        .package(url: "https://github.com/ordo-one/package-benchmark.git", from: "1.27.0"),
+        .package(url: "https://github.com/ordo-one/benchmark", from: "1.27.0"),
     ],
     targets: [
         .executableTarget(
             name: "FixedPointDecimalBenchmarks",
             dependencies: [
                 .product(name: "FixedPointDecimal", package: "FixedPoint"),
-                .product(name: "Benchmark", package: "package-benchmark"),
+                .product(name: "Benchmark", package: "benchmark"),
             ],
             path: "Benchmarks/FixedPointDecimalBenchmarks",
             plugins: [
-                .plugin(name: "BenchmarkPlugin", package: "package-benchmark"),
+                .plugin(name: "BenchmarkPlugin", package: "benchmark"),
             ]
         ),
     ]
