@@ -370,7 +370,9 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// constant table, so it costs the same as the array lookup without the lazy initialization.
     ///
     /// - Precondition: `exponent` must be in `0...18`.
-    @inlinable
+    // Always inlined so constant exponents fold to a constant; only together with the inlined
+    // `rounded(scale:_:)` (on its own it made `rounded` too big for the inliner at some call sites).
+    @inlinable @inline(__always)
     internal static func _powerOf10(_ exponent: Int) -> Int64 {
         switch exponent {
         case 0: return 1

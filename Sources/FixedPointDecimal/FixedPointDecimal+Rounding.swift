@@ -44,7 +44,10 @@ extension FixedPointDecimal {
     /// - Returns: The rounded value.
     /// - Precondition: The value must not be NaN.
     /// - Precondition: `scale` must be in `0...8`.
-    @inlinable
+    // Always inlined: callers almost always pass a constant scale and mode, and once inlined the
+    // mode `switch` folds away and the divisor becomes a constant (multiply-high instead of `sdiv`).
+    // Left to the heuristics it was often kept out of line (~65 instructions instead of ~35).
+    @inlinable @inline(__always)
     public func rounded(scale: Int = 0, _ mode: RoundingMode = .toNearestOrEven) -> Self {
         precondition(scale >= 0 && scale <= Self.fractionalDigitCount,
                      "Scale must be in 0...\(Self.fractionalDigitCount)")
