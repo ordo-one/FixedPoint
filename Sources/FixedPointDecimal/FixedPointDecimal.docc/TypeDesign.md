@@ -83,14 +83,16 @@ Financial systems must never silently produce incorrect values. A trapping overf
 
 Hot-path code can opt into wrapping variants (`&+`, `&-`, `&*`) where the programmer has proven overflow and NaN cannot occur. These perform no validation — no NaN checks, no overflow traps, no sentinel adjustment — matching Swift `Int` wrapping operator semantics exactly.
 
-## Why Int128 Intermediate for Multiplication/Division?
+## Why a 128-bit Intermediate for Multiplication/Division?
 
 Multiplying two `FixedPointDecimal` values requires computing `(a * b) / 10^8`. Without widening, the internal storage multiplication can overflow `Int64` for values as small as ~9,600 (since 9600 x 10^8 x 9600 x 10^8 > Int64.max).
 
-With `Int128` intermediate:
-- Widening to `Int128` before multiplication can represent the full range of products
-- Division by the scale factor brings the result back to `Int64` range
-- Swift 6.2 provides native `Int128`, so this adds no external dependency
+So the product is computed at full width (`multipliedFullWidth(by:)`, 128 bits), and division widens the dividend the same way (`a` x 10^8). The result always has to fit back in `Int64`, which the implementation exploits:
+- Multiplication divides the 128-bit product by the constant 10^8 in 32-bit steps; each step is a 64-bit division by a constant, which compiles to a multiply-high and shift
+- Division uses a single 64-bit divide when the widened dividend fits in 64 bits, and otherwise a 128-by-64 divide (`dividingFullWidth(_:)`)
+- Banker's rounding is applied to the magnitude, then the sign
+
+Dividing a general `Int128` by an `Int128` instead would call a generic runtime routine that costs more than the rest of the operation put together. `Int128` is still used to compute the truncated partial value that `dividedReportingOverflow(by:)` reports on overflow.
 
 ## Rounding Policy
 

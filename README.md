@@ -265,7 +265,7 @@ let wrapped = a &+ b
 
 ```bash
 swift build
-swift test        # 541 tests across 14 suites
+swift test        # ~650 tests across 20 suites
 ```
 
 ## Benchmarks

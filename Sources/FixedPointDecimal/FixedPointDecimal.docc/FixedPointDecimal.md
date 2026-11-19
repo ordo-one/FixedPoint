@@ -20,14 +20,14 @@ let notional = price * quantity  // 123450
 
 ### Performance vs Foundation.Decimal
 
-Benchmarked on Apple M4 Max, Swift 6.2:
+Benchmarked on Apple M3 Max, macOS 27.2, Swift 6.4.2 (p50 per operation; see <doc:Performance> for more operations and x86_64 Linux):
 
 | Operation | FixedPointDecimal | Foundation.Decimal | Speedup |
 |---|---|---|---|
-| Addition | 0.67 ns | 240 ns | **359x** |
-| Multiplication | 8 ns | 607 ns | **79x** |
-| Division | 8 ns | 1,285 ns | **168x** |
-| Comparison | 0.33 ns | 300 ns | **901x** |
+| Addition | 0.81 ns | 73 ns | **90x** |
+| Multiplication | 6.2 ns | 351 ns | **57x** |
+| Division | 10.5 ns | 815 ns | **78x** |
+| Comparison | 0.11 ns | 93 ns | **872x** |
 
 All arithmetic operations compile to native integer instructions with zero heap allocations.
 

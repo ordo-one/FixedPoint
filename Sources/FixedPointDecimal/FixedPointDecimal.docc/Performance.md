@@ -114,8 +114,8 @@ adjustment — matching Swift `Int` wrapping operator semantics.
 | **Multiplication** | 28 | 27 |
 
 The checked operators cost the same as the wrapping ones in these benchmarks: the NaN and
-overflow checks add no measurable time or instructions, and their branches are never taken, so
-they are perfectly predicted. Prefer the checked operators; use `&+`, `&-` and `&*` only when you
+overflow checks add no measurable time and at most one instruction, and their branches are never
+taken, so they are perfectly predicted. Prefer the checked operators; use `&+`, `&-` and `&*` only when you
 specifically need wrapping instead of trapping on overflow.
 
 ## Zero Heap Allocations

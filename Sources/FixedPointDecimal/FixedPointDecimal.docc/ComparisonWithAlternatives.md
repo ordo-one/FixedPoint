@@ -13,21 +13,21 @@ How FixedPointDecimal compares to Foundation.Decimal, Double, and a future Int12
 
 ## Performance
 
-Benchmarked on Apple M4 Max, macOS 15, Swift 6.2:
+Benchmarked on Apple M3 Max, macOS 27.2, Swift 6.4.2 (p50 per operation; see <doc:Performance> for x86_64 Linux and instruction counts):
 
 | Operation | FixedPointDecimal | Foundation.Decimal | Speedup |
 |---|---|---|---|
-| Addition | 0.67 ns | 240 ns | **359x** |
-| Subtraction | 0.67 ns | 283 ns | **424x** |
-| Multiplication | 8 ns (Int128 intermediate) | 607 ns | **79x** |
-| Division | 8 ns (Int128 intermediate) | 1,285 ns | **168x** |
-| Comparison (`<`) | 0.33 ns (single `cmp`) | 300 ns | **901x** |
-| Equality (`==`) | 0.34 ns | 317 ns | **943x** |
-| String formatting | 44 ns | 1,045 ns | **24x** |
-| JSON decode | 457 ns | 831 ns | **1.8x** |
-| `init(significand:exponent:)` | 0.41 ns | — | — |
-| `init(Double)` | 1.4 ns | 2,319 ns | **1,622x** |
-| `rounded(scale:)` | 2 ns | 705 ns | **349x** |
+| Addition | 0.81 ns | 73 ns | **90x** |
+| Subtraction | 0.81 ns | 98 ns | **120x** |
+| Multiplication | 6.2 ns | 351 ns | **57x** |
+| Division | 10.5 ns | 815 ns | **78x** |
+| Comparison (`<`) | 0.11 ns (single `cmp`) | 93 ns | **872x** |
+| Equality (`==`) | 0.09 ns | 109 ns | **1,178x** |
+| String formatting | 23 ns | 515 ns | **22x** |
+| JSON decode | 440 ns | 734 ns | **1.7x** |
+| `init(significand:exponent:)` | 1.0 ns | — | — |
+| `init(Double)` | 1.2 ns | 578 ns | **490x** |
+| `rounded(scale:)` | 1.1 ns | 121 ns | **112x** |
 
 ## Precision and Range
 

@@ -41,14 +41,13 @@ extension FixedPointDecimal {
     /// Returns the product of two values, wrapping on overflow.
     ///
     /// Unlike `*`, this operator performs no NaN checks or sentinel
-    /// adjustment. Uses `Int128` intermediate arithmetic with banker's
-    /// rounding and truncates to `Int64` if the result overflows.
+    /// adjustment. The full 128-bit product is divided by the scale factor
+    /// with banker's rounding, and the quotient is truncated to `Int64` if it
+    /// overflows.
     ///
-    /// - Note: Unlike `&+` and `&-`, wrapping multiplication is actually
-    ///   slower than checked `*` in benchmarks. The `precondition` in `*`
-    ///   gives the optimizer proof that the result fits in `Int64`, enabling
-    ///   tighter code generation. Prefer `*` unless you specifically need
-    ///   non-trapping overflow behavior.
+    /// - Note: `&*` is no faster than checked `*` (the checks are predicted
+    ///   branches). Prefer `*` unless you specifically need non-trapping
+    ///   overflow behavior.
     ///
     /// - Important: If either operand is NaN, the result is undefined.
     ///   The caller is responsible for ensuring operands are valid.
@@ -114,8 +113,9 @@ extension FixedPointDecimal {
     /// Returns the product of this value and the given value, along with a Boolean
     /// indicating whether overflow occurred in the operation.
     ///
-    /// Uses `Int128` intermediate arithmetic. Overflow is reported when the scaled
-    /// result exceeds `Int64` range. Traps if either operand is NaN.
+    /// Computes the full 128-bit product, so no precision is lost. Overflow is
+    /// reported when the rounded result exceeds `Int64` range. Traps if either
+    /// operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.0"

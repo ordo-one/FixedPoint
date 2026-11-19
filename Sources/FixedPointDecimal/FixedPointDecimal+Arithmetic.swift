@@ -191,11 +191,10 @@ extension FixedPointDecimal {
 
     /// Returns the product of two values.
     ///
-    /// Uses `Int128` intermediate arithmetic to prevent precision loss during
-    /// the multiply-then-divide-by-scale-factor operation. The result is
-    /// rounded using banker's rounding (round half to even). If either operand
-    /// Traps if either operand is NaN or if the final result does not fit in
-    /// `Int64`.
+    /// The full 128-bit product is divided by the scale factor (10⁸), so no
+    /// precision is lost, and the result is rounded using banker's rounding
+    /// (round half to even). Traps if either operand is NaN or if the result
+    /// does not fit in `Int64`.
     ///
     /// ```swift
     /// let price: FixedPointDecimal = "12.50"
@@ -231,10 +230,10 @@ extension FixedPointDecimal {
 
     /// Returns the quotient of two values.
     ///
-    /// Uses `Int128` intermediate arithmetic for precision. The result is
-    /// rounded using banker's rounding (round half to even). If either operand
-    /// Traps if either operand is NaN, on division by zero, or if the result
-    /// does not fit in `Int64`.
+    /// The dividend is widened to 128 bits (`lhs` × 10⁸) before dividing, so no
+    /// precision is lost, and the result is rounded using banker's rounding
+    /// (round half to even). Traps if either operand is NaN, on division by
+    /// zero, or if the result does not fit in `Int64`.
     ///
     /// ```swift
     /// let total: FixedPointDecimal = "100.0"
