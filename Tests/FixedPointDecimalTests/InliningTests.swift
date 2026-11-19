@@ -23,7 +23,7 @@ private func comparison(_ lhs: FixedPointDecimal, _ rhs: FixedPointDecimal) -> B
 
 @_noAllocation
 private func conversions(_ value: FixedPointDecimal) -> Int {
-    Int(value) + (Int(exactly: value) ?? 0) + Int(Double(value)) + Int(FixedPointDecimal(3))
+    Int(value) + Int(exactly: value)! + Int(Double(value)) + Int(FixedPointDecimal(3))
         + value.numberOfFractionalDigits
 }
 
