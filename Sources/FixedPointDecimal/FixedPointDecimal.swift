@@ -43,7 +43,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     public static var fractionalDigitCount: Int { 8 }
 
     /// The scale factor: 10⁸ = 100,000,000.
-    @usableFromInline
+    @inlinable
     internal static var scaleFactor: Int64 { 100_000_000 }
 
     /// Creates a value from its raw scaled integer representation.
@@ -314,7 +314,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// The integer part, truncated toward zero.
     ///
     /// - Precondition: The value must not be NaN.
-    @usableFromInline
+    @inlinable
     internal var integerPart: Int64 {
         precondition(!isNaN, "Cannot access integerPart of NaN")
         return _storage / Self.scaleFactor
@@ -323,7 +323,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// The fractional part as a scaled integer (0..<10^8).
     ///
     /// - Precondition: The value must not be NaN.
-    @usableFromInline
+    @inlinable
     internal var fractionalPart: Int64 {
         precondition(!isNaN, "Cannot access fractionalPart of NaN")
         return _storage % Self.scaleFactor
