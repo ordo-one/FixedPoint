@@ -49,49 +49,6 @@ extension FixedPointDecimal {
         return (quotientHigh, (upper / divisor) << 32 | lower / divisor, lower % divisor)
     }
 
-    /// Divides the unsigned 128-bit value `high:low` by `divisor`.
-    ///
-    /// - Precondition: `high < divisor`, so the quotient fits in 64 bits (callers check this).
-    @inlinable @inline(__always)
-    internal static func _divide(high: UInt64, low: UInt64, by divisor: UInt64) -> (quotient: UInt64, remainder: UInt64) {
-        #if arch(x86_64)
-        // `divq` divides 128 by 64 bits in hardware; compiler-rt reaches it from here.
-        return divisor.dividingFullWidth((high, low))
-        #else
-        // No 128-by-64 divide instruction: Knuth's algorithm D with two 32-bit quotient digits
-        // (Hacker's Delight `divlu`), using two 64-bit divides.
-        let shift = UInt64(divisor.leadingZeroBitCount)
-        let normalizedDivisor = divisor &<< shift
-        // `(low >> 1) >> (63 - shift)` is `low >> (64 - shift)` without the out-of-range shift when shift == 0.
-        let dividendHigh = high &<< shift | (low &>> 1) &>> (63 &- shift)
-        let dividendLow = low &<< shift
-        let divisorHigh = normalizedDivisor &>> 32
-        let divisorLow = normalizedDivisor & 0xFFFF_FFFF
-        let dividendLowHigh = dividendLow &>> 32
-        let dividendLowLow = dividendLow & 0xFFFF_FFFF
-
-        var quotientHigh = dividendHigh / divisorHigh
-        var partialRemainder = dividendHigh &- quotientHigh &* divisorHigh
-        while quotientHigh >= 1 << 32 || quotientHigh &* divisorLow > (partialRemainder &<< 32 | dividendLowHigh) {
-            quotientHigh &-= 1
-            partialRemainder &+= divisorHigh
-            if partialRemainder >= 1 << 32 { break }
-        }
-
-        let middle = (dividendHigh &<< 32 | dividendLowHigh) &- quotientHigh &* normalizedDivisor
-        var quotientLow = middle / divisorHigh
-        partialRemainder = middle &- quotientLow &* divisorHigh
-        while quotientLow >= 1 << 32 || quotientLow &* divisorLow > (partialRemainder &<< 32 | dividendLowLow) {
-            quotientLow &-= 1
-            partialRemainder &+= divisorHigh
-            if partialRemainder >= 1 << 32 { break }
-        }
-
-        let remainder = ((middle &<< 32 | dividendLowLow) &- quotientLow &* normalizedDivisor) &>> shift
-        return (quotientHigh &<< 32 | quotientLow, remainder)
-        #endif
-    }
-
     /// `|lhs × rhs| / 10⁸`, rounded half to even, for multiplication of raw storage values.
     ///
     /// - Returns: The low 64 bits of the rounded magnitude, and whether the rounded magnitude
@@ -120,7 +77,10 @@ extension FixedPointDecimal {
             // |lhs| < 2⁶⁴ / 10⁸ (values below about 1844.67): a single 64-bit divide.
             (quotient, remainder) = low.quotientAndRemainder(dividingBy: divisor)
         } else if high < divisor {
-            (quotient, remainder) = _divide(high: high, low: low, by: divisor)
+            // A 128-by-64 divide whose quotient fits in 64 bits. On x86_64 compiler-rt does this
+            // with one `divq`; on arm64 (no such instruction) it was measured as fast as an
+            // inlined Knuth algorithm D, so one implementation serves both.
+            (quotient, remainder) = divisor.dividingFullWidth((high, low))
         } else {
             return nil // the quotient needs more than 64 bits
         }

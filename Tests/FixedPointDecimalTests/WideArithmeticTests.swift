@@ -146,6 +146,16 @@ struct WideArithmeticTests {
         }
     }
 
+    @Test("A quotient of exactly UInt64.max that rounds up is reported as overflow")
+    func roundingWrapsUInt64Max() {
+        // The unrounded magnitude is 2⁶⁴ − 1 and rounding adds 1, which wraps to 0 in 64 bits.
+        // Found by search; random operands essentially never land here.
+        checkMultiply(200_000_005, 9_223_371_806_270_480_651)
+        checkMultiply(-200_000_008, 9_223_371_667_919_909_091)
+        checkDivide(5_212_496_472_908_108, 28257)
+        checkDivide(-6_097_017_851_242_481, 33052)
+    }
+
     @Test("Division exercises both the single-divide and the wide paths")
     func dividePaths() {
         // |lhs| × 10⁸ < 2⁶⁴ takes the single 64-bit divide; anything larger takes the wide path.
