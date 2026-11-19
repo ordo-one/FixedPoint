@@ -172,14 +172,14 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
         // rawValue = significand × 10^(fractionalDigitCount + exponent)
         let shift = Self.fractionalDigitCount + exponent
         let sig = Int64(significand)
-        if shift >= 0, shift < Self._pow10Table.count {
-            let (result, overflow) = sig.multipliedReportingOverflow(by: Self._pow10Table[shift])
+        if shift >= 0, shift <= Self._maxPowerOf10Exponent {
+            let (result, overflow) = sig.multipliedReportingOverflow(by: Self._powerOf10(shift))
             precondition(!overflow, "FixedPointDecimal(significand: \(significand), exponent: \(exponent)) overflows")
             precondition(result != .min, "FixedPointDecimal(significand:exponent:) produced NaN sentinel")
             self._storage = result
-        } else if shift < 0, -shift < Self._pow10Table.count {
+        } else if shift < 0, -shift <= Self._maxPowerOf10Exponent {
             // Negative shift: banker's rounding for sub-scale precision
-            let divisor = Self._pow10Table[-shift]
+            let divisor = Self._powerOf10(-shift)
             let result = Self._bankersDiv(Int128(sig), Int128(divisor))
             self._storage = Int64(result)
         } else {
@@ -357,35 +357,43 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
 
     // MARK: - Power of 10 helper
 
-    /// Lookup table for 10^0 through 10^18 (the full Int64 range).
-    @usableFromInline
-    internal static let _pow10Table: [Int64] = [
-        1,                          // 10^0
-        10,                         // 10^1
-        100,                        // 10^2
-        1_000,                      // 10^3
-        10_000,                     // 10^4
-        100_000,                    // 10^5
-        1_000_000,                  // 10^6
-        10_000_000,                 // 10^7
-        100_000_000,                // 10^8
-        1_000_000_000,              // 10^9
-        10_000_000_000,             // 10^10
-        100_000_000_000,            // 10^11
-        1_000_000_000_000,          // 10^12
-        10_000_000_000_000,         // 10^13
-        100_000_000_000_000,        // 10^14
-        1_000_000_000_000_000,      // 10^15
-        10_000_000_000_000_000,     // 10^16
-        100_000_000_000_000_000,    // 10^17
-        1_000_000_000_000_000_000,  // 10^18
-    ]
+    /// The largest exponent `n` for which 10ⁿ fits in `Int64`.
+    @inlinable
+    internal static var _maxPowerOf10Exponent: Int { 18 }
 
-    @usableFromInline
+    /// Returns 10^`exponent` for `exponent` in `0...18` (the full `Int64` range).
+    ///
+    /// This is a `switch` over constants rather than a stored array on purpose: a `static let`
+    /// array is a lazily initialized global that clients cannot inline, which makes every caller
+    /// (`rounded(scale:_:)`, `pow(_:_:)`, `init(significand:exponent:)`) unusable from
+    /// `@_noAllocation` code. LLVM lowers this `switch` to a bounds check plus a load from a
+    /// constant table, so it costs the same as the array lookup without the lazy initialization.
+    ///
+    /// - Precondition: `exponent` must be in `0...18`.
+    @inlinable
     internal static func _powerOf10(_ exponent: Int) -> Int64 {
-        precondition(exponent >= 0 && exponent < _pow10Table.count,
-                     "Exponent \(exponent) out of range 0...\(_pow10Table.count - 1)")
-        return _pow10Table[exponent]
+        switch exponent {
+        case 0: return 1
+        case 1: return 10
+        case 2: return 100
+        case 3: return 1_000
+        case 4: return 10_000
+        case 5: return 100_000
+        case 6: return 1_000_000
+        case 7: return 10_000_000
+        case 8: return 100_000_000
+        case 9: return 1_000_000_000
+        case 10: return 10_000_000_000
+        case 11: return 100_000_000_000
+        case 12: return 1_000_000_000_000
+        case 13: return 10_000_000_000_000
+        case 14: return 100_000_000_000_000
+        case 15: return 1_000_000_000_000_000
+        case 16: return 10_000_000_000_000_000
+        case 17: return 100_000_000_000_000_000
+        case 18: return 1_000_000_000_000_000_000
+        default: preconditionFailure("Exponent \(exponent) out of range 0...\(_maxPowerOf10Exponent)")
+        }
     }
 
     // MARK: - Integer exponentiation
@@ -422,8 +430,8 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
         // Fast path: pow(10, n) via lookup table — O(1) instead of n-1 multiplications.
         if x._storage == 10 &* scaleFactor {
             let shift = fractionalDigitCount + n
-            if shift >= 0, shift < _pow10Table.count {
-                return FixedPointDecimal(rawValue: _pow10Table[shift])
+            if shift >= 0, shift <= _maxPowerOf10Exponent {
+                return FixedPointDecimal(rawValue: _powerOf10(shift))
             }
             precondition(shift < 0, "FixedPointDecimal pow overflow")
             return .zero

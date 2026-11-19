@@ -189,6 +189,17 @@ struct PowTests {
         #expect(value == FixedPointDecimal(rawValue: 123))
     }
 
+    @Test("significand+exponent at the edges of the power-of-10 range")
+    func significandExponentRangeEdges() {
+        // exponent 10 → shift 18, the largest power of 10 that fits in Int64
+        #expect(FixedPointDecimal(significand: 1, exponent: 10) == FixedPointDecimal(rawValue: 1_000_000_000_000_000_000))
+        #expect(FixedPointDecimal(significand: 0, exponent: 10) == .zero)
+        // exponent -26 → shift -18, divide by 10^18 with banker's rounding
+        #expect(FixedPointDecimal(significand: Int(Int64.max), exponent: -26) == FixedPointDecimal(rawValue: 9))
+        #expect(FixedPointDecimal(significand: -1_500_000_000_000_000_000, exponent: -26)
+            == FixedPointDecimal(rawValue: -2))
+    }
+
     // MARK: - pow(10, n) fast path
 
     @Test("pow(10, n) positive exponents via lookup table")

@@ -42,6 +42,41 @@ struct PreconditionTests {
         }
     }
 
+    @Test("init(significand:exponent:) traps just past the positive shift range")
+    func initSignificandExponentJustPastPositiveRange() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(significand: 0, exponent: 11) // shift 19
+        }
+    }
+
+    @Test("init(significand:exponent:) traps just past the negative shift range")
+    func initSignificandExponentJustPastNegativeRange() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(significand: 1, exponent: -27) // shift -19
+        }
+    }
+
+    @Test("_powerOf10 traps on exponent above 18")
+    func powerOf10TooLarge() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal._powerOf10(19)
+        }
+    }
+
+    @Test("_powerOf10 traps on negative exponent")
+    func powerOf10Negative() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal._powerOf10(-1)
+        }
+    }
+
+    @Test("pow(10, n) traps when 10^n overflows")
+    func pow10Overflow() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal.pow(10, 11)
+        }
+    }
+
     @Test("init(significand:exponent:) traps on overflow")
     func initSignificandExponentOverflow() async {
         await #expect(processExitsWith: .failure) {
