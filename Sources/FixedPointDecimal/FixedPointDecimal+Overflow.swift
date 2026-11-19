@@ -59,9 +59,8 @@ extension FixedPointDecimal {
     /// - Returns: The wrapping product of `lhs` and `rhs`.
     @inlinable
     public static func &* (lhs: Self, rhs: Self) -> Self {
-        let wide = Int128(lhs._storage) * Int128(rhs._storage)
-        let scaled = _bankersDiv(wide, Int128(scaleFactor))
-        return Self(rawValue: Int64(truncatingIfNeeded: scaled))
+        let (magnitude, _) = _scaledProductMagnitude(lhs._storage, rhs._storage)
+        return Self(rawValue: _signed(magnitude, negative: (lhs._storage ^ rhs._storage) < 0))
     }
 }
 
@@ -131,11 +130,9 @@ extension FixedPointDecimal {
     @inlinable
     public func multipliedReportingOverflow(by other: Self) -> (partialValue: Self, overflow: Bool) {
         precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal multiplication")
-        let wide = Int128(_storage) * Int128(other._storage)
-        let scaled = Self._bankersDiv(wide, Int128(Self.scaleFactor))
-        let fits = scaled > Int128(Int64.min) && scaled <= Int128(Int64.max)
-        let result = Int64(truncatingIfNeeded: scaled)
-        return (Self(rawValue: result), !fits || result == .min)
+        let (magnitude, overflow) = Self._scaledProductMagnitude(_storage, other._storage)
+        let result = Self._signed(magnitude, negative: (_storage ^ other._storage) < 0)
+        return (Self(rawValue: result), overflow || result == .min)
     }
 
     /// Returns the quotient of this value divided by the given value, along with
@@ -163,10 +160,12 @@ extension FixedPointDecimal {
         guard other._storage != 0 else {
             return (.zero, true)
         }
+        if let magnitude = Self._scaledQuotientMagnitude(_storage, other._storage) {
+            return (Self(rawValue: Self._signed(magnitude, negative: (_storage ^ other._storage) < 0)), false)
+        }
+        // Overflow (rare): compute the full quotient to report its truncated low 64 bits.
         let wide = Int128(_storage) * Int128(Self.scaleFactor)
         let result = Self._bankersDiv(wide, Int128(other._storage))
-        let fits = result > Int128(Int64.min) && result <= Int128(Int64.max)
-        let truncated = Int64(truncatingIfNeeded: result)
-        return (Self(rawValue: truncated), !fits || truncated == .min)
+        return (Self(rawValue: Int64(truncatingIfNeeded: result)), true)
     }
 }
