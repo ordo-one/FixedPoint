@@ -178,10 +178,14 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
             precondition(result != .min, "FixedPointDecimal(significand:exponent:) produced NaN sentinel")
             self._storage = result
         } else if shift < 0, -shift <= Self._maxPowerOf10Exponent {
-            // Negative shift: banker's rounding for sub-scale precision
-            let divisor = Self._powerOf10(-shift)
-            let result = Self._bankersDiv(Int128(sig), Int128(divisor))
-            self._storage = Int64(result)
+            // Negative shift: banker's rounding for sub-scale precision. An Int64 divided by a
+            // power of ten needs no 128-bit arithmetic: divide the magnitude, round half to even,
+            // then apply the sign. |result| ≤ |sig| / 10, so it cannot overflow.
+            let divisor = UInt64(Self._powerOf10(-shift))
+            let (quotient, remainder) = sig.magnitude.quotientAndRemainder(dividingBy: divisor)
+            let twiceRemainder = remainder &<< 1 // remainder < divisor ≤ 10¹⁸, so no overflow
+            let roundUp = twiceRemainder > divisor || (twiceRemainder == divisor && quotient & 1 != 0)
+            self._storage = Self._signed(roundUp ? quotient &+ 1 : quotient, negative: sig < 0)
         } else {
             preconditionFailure(
                 "FixedPointDecimal(significand: \(significand), exponent: \(exponent)): " +
@@ -370,9 +374,7 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
     /// constant table, so it costs the same as the array lookup without the lazy initialization.
     ///
     /// - Precondition: `exponent` must be in `0...18`.
-    // Always inlined so constant exponents fold to a constant; only together with the inlined
-    // `rounded(scale:_:)` (on its own it made `rounded` too big for the inliner at some call sites).
-    @inlinable @inline(__always)
+    @inlinable
     internal static func _powerOf10(_ exponent: Int) -> Int64 {
         switch exponent {
         case 0: return 1

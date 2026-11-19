@@ -146,6 +146,39 @@ struct WideArithmeticTests {
         }
     }
 
+    @Test("init(significand:exponent:) below the scale matches the Int128 reference")
+    func significandNegativeShift() {
+        var rng = SplitMix64(state: 0x5EED_0005)
+        // Exponents -9 ... -26 divide the significand by 10¹ ... 10¹⁸ with banker's rounding.
+        var cases: [(Int64, Int)] = []
+        for exponent in -26 ... -9 {
+            for significand: Int64 in [0, 1, -1, 5, -5, 15, -15, 25, Int64.max, Int64.min, Int64.min + 1] {
+                cases.append((significand, exponent))
+            }
+            // Exact ties: an odd or even quotient followed by 5 then zeros.
+            let shift = -(exponent + 8)
+            if shift <= 18 {
+                let half = FixedPointDecimal._powerOf10(shift) / 2
+                for quotient: Int64 in [0, 1, 2, 3, 12_344, 12_345] {
+                    let (scaled, overflow) = quotient.multipliedReportingOverflow(by: FixedPointDecimal._powerOf10(shift))
+                    if !overflow, scaled <= Int64.max - half {
+                        cases.append((scaled + half, exponent))
+                        cases.append((-(scaled + half), exponent))
+                    }
+                }
+            }
+        }
+        for _ in 0 ..< 100_000 {
+            cases.append((Int64(bitPattern: rng.next()), Int.random(in: -26 ... -9, using: &rng)))
+        }
+        for (significand, exponent) in cases {
+            let divisor = Int128(FixedPointDecimal._powerOf10(-(exponent + 8)))
+            let expected = FixedPointDecimal._bankersDiv(Int128(significand), divisor)
+            let actual = FixedPointDecimal(significand: Int(significand), exponent: exponent)
+            #expect(actual.rawValue == Int64(expected), "significand \(significand), exponent \(exponent)")
+        }
+    }
+
     @Test("A quotient of exactly UInt64.max that rounds up is reported as overflow")
     func roundingWrapsUInt64Max() {
         // The unrounded magnitude is 2⁶⁴ − 1 and rounding adds 1, which wraps to 0 in 64 bits.
