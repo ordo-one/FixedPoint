@@ -110,6 +110,59 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
+    // MARK: - Independent operations over operand tables
+    //
+    // The benchmarks above chain each result into the next call, so they measure latency on one
+    // value sequence. These run independent operations over 1024 operand pairs, in two data
+    // shapes, because whether the banker's-rounding step is predictable depends on the data:
+    // price × whole quantity is exact (remainder 0, never rounds), arbitrary 8-digit values round
+    // up or down at random. Synthetic data from a fixed seed.
+
+    let tableSize = 1024
+    var generator = BenchmarkRandom(seed: 0x00F1_DE0D)
+    // Prices with 2 decimals (0.01 ... 9 999.99) and whole quantities (1 ... 10 000): exact products.
+    let prices = (0 ..< tableSize).map { _ in
+        FixedPointDecimal(rawValue: Int64(generator.next(upTo: 999_999) + 1) * 1_000_000)
+    }
+    let quantities = (0 ..< tableSize).map { _ in
+        FixedPointDecimal(rawValue: Int64(generator.next(upTo: 10_000) + 1) * 100_000_000)
+    }
+    // Arbitrary 8-digit values: factors in 0 ... 100 000 and 0 ... 1 000; dividends up to
+    // 1 000 000 (mostly the wide 128-bit path) over divisors in 0.01 ... 1 000.
+    let factorsA = (0 ..< tableSize).map { _ in FixedPointDecimal(rawValue: Int64(generator.next(upTo: 10_000_000_000_000))) }
+    let factorsB = (0 ..< tableSize).map { _ in FixedPointDecimal(rawValue: Int64(generator.next(upTo: 100_000_000_000))) }
+    let dividends = (0 ..< tableSize).map { _ in FixedPointDecimal(rawValue: Int64(generator.next(upTo: 100_000_000_000_000))) }
+    let divisors = (0 ..< tableSize).map { _ in
+        FixedPointDecimal(rawValue: Int64(generator.next(upTo: 100_000_000_000) + 1_000_000))
+    }
+
+    Benchmark("FixedPointDecimal multiplication table exact (price × quantity)",
+              configuration: defaultConfiguration) { benchmark in
+        for i in benchmark.scaledIterations {
+            blackHole(prices[i & (tableSize - 1)] * quantities[i & (tableSize - 1)])
+        }
+    }
+
+    Benchmark("FixedPointDecimal multiplication table inexact", configuration: defaultConfiguration) { benchmark in
+        for i in benchmark.scaledIterations {
+            blackHole(factorsA[i & (tableSize - 1)] * factorsB[i & (tableSize - 1)])
+        }
+    }
+
+    Benchmark("FixedPointDecimal division table inexact", configuration: defaultConfiguration) { benchmark in
+        for i in benchmark.scaledIterations {
+            blackHole(dividends[i & (tableSize - 1)] / divisors[i & (tableSize - 1)])
+        }
+    }
+
+    Benchmark("FixedPointDecimal division table exact (notional ÷ quantity)",
+              configuration: defaultConfiguration) { benchmark in
+        for i in benchmark.scaledIterations {
+            let index = i & (tableSize - 1)
+            blackHole((prices[index] * quantities[index]) / quantities[index])
+        }
+    }
+
     // MARK: - Division
 
     Benchmark("FixedPointDecimal division", configuration: defaultConfiguration) { benchmark in
@@ -475,4 +528,19 @@ let benchmarks: @Sendable () -> Void = {
         }
         blackHole(count)
     }
+}
+
+/// SplitMix64, so the operand tables are the same on every run and machine.
+struct BenchmarkRandom {
+    var state: UInt64
+    init(seed: UInt64) { state = seed }
+    mutating func next() -> UInt64 {
+        state &+= 0x9E37_79B9_7F4A_7C15
+        var z = state
+        z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
+        z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
+        return z ^ (z >> 31)
+    }
+    /// A value in `0 ..< bound` (modulo bias is irrelevant here).
+    mutating func next(upTo bound: UInt64) -> UInt64 { next() % bound }
 }
