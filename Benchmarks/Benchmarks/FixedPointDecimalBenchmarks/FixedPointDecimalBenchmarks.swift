@@ -14,6 +14,14 @@ let benchmarks: @Sendable () -> Void = {
         scalingFactor: .mega
     )
 
+    // For operations taking hundreds of nanoseconds (Foundation.Decimal, JSON), a million
+    // iterations per sample leaves only 2-4 samples in the default time budget. A thousand per
+    // sample gives a real distribution for the same run time; results are still per operation.
+    let slowOperationConfiguration = Benchmark.Configuration(
+        metrics: defaultMetrics,
+        scalingFactor: .kilo
+    )
+
     // MARK: - Addition
 
     Benchmark("FixedPointDecimal addition", configuration: defaultConfiguration) { benchmark in
@@ -36,7 +44,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
-    Benchmark("Foundation Decimal addition", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal addition", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
 
@@ -68,7 +76,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
-    Benchmark("Foundation Decimal subtraction", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal subtraction", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(string: "99999.99999999")!
         let delta = Foundation.Decimal(string: "0.00000001")!
 
@@ -100,7 +108,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
-    Benchmark("Foundation Decimal multiplication", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal multiplication", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(string: "12345.67890123")!
         let factor = Foundation.Decimal(string: "1.00000001")!
 
@@ -175,7 +183,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
-    Benchmark("Foundation Decimal division", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal division", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(string: "12345.67890123")!
         let divisor = Foundation.Decimal(string: "1.00000001")!
 
@@ -201,7 +209,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal comparison", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal comparison", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         let threshold = Foundation.Decimal(string: "99999.99999999")!
@@ -231,7 +239,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal equality", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal equality", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         let threshold = Foundation.Decimal(string: "99999.99999999")!
@@ -262,7 +270,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal hash", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal hash", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         var hashAccumulator: Int = 0
@@ -292,7 +300,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal description", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal description", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         var lengthAccumulator: Int = 0
@@ -320,7 +328,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal to Double", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal to Double", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         var doubleAccumulator: Double = 0
@@ -415,7 +423,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal init(Double)", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal init(Double)", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let values: [Double] = [123.45, 0.001, 99999.99, 42.0, 0.12345678]
         var i = 0
@@ -453,7 +461,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
 
-    Benchmark("Foundation Decimal rounded(scale:)", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal rounded(scale:)", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         var handler = NSDecimalNumberHandler(
@@ -473,7 +481,7 @@ let benchmarks: @Sendable () -> Void = {
 
     // MARK: - JSON Encoding
 
-    Benchmark("FixedPointDecimal JSON encode", configuration: defaultConfiguration) { benchmark in
+    Benchmark("FixedPointDecimal JSON encode", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = FixedPointDecimal(0)
         let delta = FixedPointDecimal(0.00000001)
         let encoder = JSONEncoder()
@@ -487,7 +495,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(accumulated)
     }
 
-    Benchmark("Foundation Decimal JSON encode", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal JSON encode", configuration: slowOperationConfiguration) { benchmark in
         var accumulated = Foundation.Decimal(0)
         let delta = Foundation.Decimal(string: "0.00000001")!
         let encoder = JSONEncoder()
@@ -503,7 +511,7 @@ let benchmarks: @Sendable () -> Void = {
 
     // MARK: - JSON Decoding
 
-    Benchmark("FixedPointDecimal JSON decode", configuration: defaultConfiguration) { benchmark in
+    Benchmark("FixedPointDecimal JSON decode", configuration: slowOperationConfiguration) { benchmark in
         let data = "\"12345.67890123\"".data(using: .utf8)!
         let decoder = JSONDecoder()
         var count: Int = 0
@@ -516,7 +524,7 @@ let benchmarks: @Sendable () -> Void = {
         blackHole(count)
     }
 
-    Benchmark("Foundation Decimal JSON decode", configuration: defaultConfiguration) { benchmark in
+    Benchmark("Foundation Decimal JSON decode", configuration: slowOperationConfiguration) { benchmark in
         let data = "12345.67890123".data(using: .utf8)!
         let decoder = JSONDecoder()
         var count: Int = 0

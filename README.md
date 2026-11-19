@@ -37,24 +37,24 @@ Full [API documentation](https://swiftpackageindex.com/ordo-one/FixedPoint/docum
 
 | Operation | FixedPointDecimal | Foundation.Decimal | Speedup |
 |---|---|---|---|
-| Addition | 0.67 ns | 240 ns | **359x** |
-| Subtraction | 0.67 ns | 283 ns | **424x** |
-| Multiplication | 8 ns | 607 ns | **79x** |
-| Division | 8 ns | 1,285 ns | **168x** |
-| Comparison (`<`) | 0.33 ns | 300 ns | **901x** |
-| Equality (`==`) | 0.34 ns | 317 ns | **943x** |
-| Hash | 5 ns | 261 ns | **48x** |
-| To Double | 0.49 ns | 271 ns | **551x** |
-| String description | 44 ns | 1,045 ns | **24x** |
-| JSON encode | 320 ns | 1,215 ns | **3.8x** |
-| JSON decode | 457 ns | 831 ns | **1.8x** |
-| `init(significand:exponent:)` | 0.41 ns | — | — |
-| `init(Double)` | 1.4 ns | 2,319 ns | **1,622x** |
-| `rounded(scale:)` | 2 ns | 705 ns | **349x** |
+| Addition | 0.81 ns | 73 ns | **90x** |
+| Subtraction | 0.81 ns | 98 ns | **120x** |
+| Multiplication | 6.2 ns | 351 ns | **57x** |
+| Division | 10.5 ns | 815 ns | **78x** |
+| Comparison (`<`) | 0.11 ns | 93 ns | **872x** |
+| Equality (`==`) | 0.09 ns | 109 ns | **1,178x** |
+| Hash | 7.2 ns | 112 ns | **16x** |
+| To Double | 0.76 ns | 119 ns | **156x** |
+| String description | 23 ns | 515 ns | **22x** |
+| JSON encode | 305 ns | 723 ns | **2.4x** |
+| JSON decode | 440 ns | 734 ns | **1.7x** |
+| `init(significand:exponent:)` | 1.0 ns | — | — |
+| `init(Double)` | 1.2 ns | 578 ns | **490x** |
+| `rounded(scale:)` | 1.1 ns | 121 ns | **112x** |
 
-**Zero heap allocations** across all operations. 8 bytes in-memory and on the wire (vs 20 for Decimal).
+**Zero heap allocations** in every FixedPointDecimal operation, including `description` (the JSON rows allocate only inside `JSONEncoder`/`JSONDecoder`). 8 bytes in-memory and on the wire (vs 20 for Decimal).
 
-*Measured on Apple M4 Max, Swift 6.2, p50 wall clock, using [benchmark](https://github.com/ordo-one/benchmark).
+*Measured on Apple M3 Max, macOS 27.2, Swift 6.4.2, p50 wall clock, using [benchmark](https://github.com/ordo-one/benchmark).
 See the full [performance analysis](Sources/FixedPointDecimal/FixedPointDecimal.docc/Performance.md) for instruction counts, allocation breakdowns, and memory layout details.*
 
 ## Range and Precision
