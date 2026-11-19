@@ -55,7 +55,7 @@ Full [API documentation](https://swiftpackageindex.com/ordo-one/FixedPoint/docum
 **Zero heap allocations** in every FixedPointDecimal operation, including `description` (the JSON rows allocate only inside `JSONEncoder`/`JSONDecoder`). 8 bytes in-memory and on the wire (vs 20 for Decimal).
 
 *Measured on Apple M3 Max, macOS 27.2, Swift 6.4.2, p50 wall clock, using [benchmark](https://github.com/ordo-one/benchmark).
-See the full [performance analysis](Sources/FixedPointDecimal/FixedPointDecimal.docc/Performance.md) for instruction counts, allocation breakdowns, and memory layout details.*
+See the full [performance analysis](Sources/FixedPointDecimal/FixedPointDecimal.docc/Performance.md) for x86_64 Linux numbers, instruction counts, allocation breakdowns, and memory layout details.*
 
 ## Range and Precision
 
