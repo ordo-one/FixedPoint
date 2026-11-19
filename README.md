@@ -54,7 +54,7 @@ Full [API documentation](https://swiftpackageindex.com/ordo-one/FixedPoint/docum
 
 **Zero heap allocations** across all operations. 8 bytes in-memory and on the wire (vs 20 for Decimal).
 
-*Measured on Apple M4 Max, Swift 6.2, p50 wall clock, using [package-benchmark](https://github.com/ordo-one/package-benchmark).
+*Measured on Apple M4 Max, Swift 6.2, p50 wall clock, using [benchmark](https://github.com/ordo-one/benchmark).
 See the full [performance analysis](Sources/FixedPointDecimal/FixedPointDecimal.docc/Performance.md) for instruction counts, allocation breakdowns, and memory layout details.*
 
 ## Range and Precision
@@ -270,7 +270,7 @@ swift test        # 541 tests across 14 suites
 
 ## Benchmarks
 
-Benchmarks use [package-benchmark](https://github.com/ordo-one/package-benchmark) and compare
+Benchmarks use [benchmark](https://github.com/ordo-one/benchmark) and compare
 every operation against `Foundation.Decimal`:
 
 ```bash
@@ -311,7 +311,7 @@ Crash artifacts are saved as `Fuzz/crash-*` files for reproduction.
 
 ## Acknowledgments
 
-- Benchmark infrastructure powered by [package-benchmark](https://github.com/ordo-one/package-benchmark)
+- Benchmark infrastructure powered by [benchmark](https://github.com/ordo-one/benchmark)
 - Entirely built with [Claude Code](https://claude.ai/code) with careful guidance and coaching
 
 ### External Test Suite Validation
