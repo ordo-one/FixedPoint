@@ -41,12 +41,12 @@ extension FixedPointDecimal {
     internal static func _divideByScaleFactor(
         high: UInt64,
         low: UInt64
-    ) -> (quotientHigh: UInt64, quotientLow: UInt64, remainder: UInt64) {
+    ) -> (quotient: (high: UInt64, low: UInt64), remainder: UInt64) {
         let divisor = UInt64(scaleFactor)
         let quotientHigh = high / divisor
         let upper = (high % divisor) << 32 | low >> 32
         let lower = (upper % divisor) << 32 | low & 0xFFFF_FFFF
-        return (quotientHigh, (upper / divisor) << 32 | lower / divisor, lower % divisor)
+        return ((quotientHigh, (upper / divisor) << 32 | lower / divisor), lower % divisor)
     }
 
     /// `|lhs × rhs| / 10⁸`, rounded half to even, for multiplication of raw storage values.
@@ -56,7 +56,7 @@ extension FixedPointDecimal {
     @inlinable @inline(__always)
     internal static func _scaledProductMagnitude(_ lhs: Int64, _ rhs: Int64) -> (magnitude: UInt64, overflow: Bool) {
         let (high, low) = lhs.magnitude.multipliedFullWidth(by: rhs.magnitude)
-        let (quotientHigh, quotient, remainder) = _divideByScaleFactor(high: high, low: low)
+        let ((quotientHigh, quotient), remainder) = _divideByScaleFactor(high: high, low: low)
         let half = UInt64(scaleFactor) / 2
         let roundUp = remainder > half || (remainder == half && quotient & 1 != 0)
         let (rounded, carry) = quotient.addingReportingOverflow(roundUp ? 1 : 0)
