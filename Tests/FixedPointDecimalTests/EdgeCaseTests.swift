@@ -362,6 +362,19 @@ struct EdgeCaseTests {
         #expect(FixedPointDecimal._powerOf10(8) == 100_000_000)
     }
 
+    @Test("Power of 10 covers the full Int64 range")
+    func powerOf10FullRange() {
+        var expected: Int64 = 1
+        for exponent in 0 ... FixedPointDecimal._maxPowerOf10Exponent {
+            #expect(FixedPointDecimal._powerOf10(exponent) == expected, "10^\(exponent)")
+            if exponent < FixedPointDecimal._maxPowerOf10Exponent {
+                expected *= 10
+            }
+        }
+        // 10^18 is the largest power of 10 that fits; 10^19 would not.
+        #expect(expected.multipliedReportingOverflow(by: 10).overflow)
+    }
+
     // MARK: - Near Overflow Multiplication
 
     @Test("Large value multiplication near overflow boundary")

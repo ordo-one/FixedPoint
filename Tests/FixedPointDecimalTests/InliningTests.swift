@@ -27,6 +27,21 @@ private func conversions(_ value: FixedPointDecimal) -> Int {
         + value.numberOfFractionalDigits
 }
 
+@_noAllocation
+private func rounding(_ value: FixedPointDecimal) -> FixedPointDecimal {
+    value.rounded(scale: 2) + value.rounded(scale: 0, .towardZero)
+}
+
+@_noAllocation
+private func powers(_ value: FixedPointDecimal, _ exponent: Int) -> FixedPointDecimal {
+    FixedPointDecimal.pow(value, exponent) + FixedPointDecimal.pow(10, exponent)
+}
+
+@_noAllocation
+private func wireFormat(_ significand: Int, _ exponent: Int) -> FixedPointDecimal {
+    FixedPointDecimal(significand: significand, exponent: exponent)
+}
+
 @Suite("Inlining")
 struct InliningTests {
     @Test("Arithmetic, comparison and conversions inline across modules")
@@ -35,5 +50,8 @@ struct InliningTests {
         #expect(overflowReporting(2.5, 4) == false)
         #expect(comparison(1, 2))
         #expect(conversions(2) == 2 + 2 + 2 + 3 + 0)
+        #expect(rounding(1.235) == 2.24)
+        #expect(powers(2, 3) == 1008)
+        #expect(wireFormat(12345, -2) == 123.45)
     }
 }
