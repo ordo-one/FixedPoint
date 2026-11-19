@@ -127,6 +127,22 @@ public func fuzzTest(_ start: UnsafeRawPointer, _ count: Int) -> CInt {
         default: fatalError()
         }
 
+        // ── INVARIANT: Multiply/divide match the straightforward Int128 formulation ──
+        // The operators work on 64-bit pieces; this is the definition they must agree with,
+        // including the overflow flag and the truncated partial value.
+        if op == .multiply || (op == .divide && b.rawValue != 0) {
+            let scale = Int128(FixedPointDecimal.scaleFactor)
+            let expected = op == .multiply
+                ? FixedPointDecimal._bankersDiv(Int128(a.rawValue) * Int128(b.rawValue), scale)
+                : FixedPointDecimal._bankersDiv(Int128(a.rawValue) * scale, Int128(b.rawValue))
+            let truncated = Int64(truncatingIfNeeded: expected)
+            let fits = expected > Int128(Int64.min) && expected <= Int128(Int64.max)
+            precondition(result.partialValue.rawValue == truncated,
+                         "\(op) of \(a.rawValue) and \(b.rawValue): partial value \(result.partialValue.rawValue) != \(truncated)")
+            precondition(result.overflow == (!fits || truncated == .min),
+                         "\(op) of \(a.rawValue) and \(b.rawValue): overflow flag \(result.overflow) is wrong")
+        }
+
         if !result.overflow {
             // ── INVARIANT: Result must not be NaN from non-NaN inputs ──
             precondition(!result.partialValue.isNaN,
@@ -310,12 +326,8 @@ public func fuzzTest(_ start: UnsafeRawPointer, _ count: Int) -> CInt {
                      "Equal values have different hashes: \(a)")
     }
 
-    // ── INVARIANT: NaN propagation ──
-    let nan = FixedPointDecimal.nan
-    precondition((nan + a).isNaN, "NaN + a is not NaN")
-    precondition((a + nan).isNaN, "a + NaN is not NaN")
-    precondition((nan - a).isNaN, "NaN - a is not NaN")
-    precondition((nan * a).isNaN, "NaN * a is not NaN")
+    // NaN is signalling: every arithmetic operation on it traps, so it can't be exercised
+    // in-process here. PreconditionTests covers those traps with exit tests.
 
     return 0
 }
