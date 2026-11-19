@@ -41,14 +41,13 @@ extension FixedPointDecimal {
     /// Returns the product of two values, wrapping on overflow.
     ///
     /// Unlike `*`, this operator performs no NaN checks or sentinel
-    /// adjustment. Uses `Int128` intermediate arithmetic with banker's
-    /// rounding and truncates to `Int64` if the result overflows.
+    /// adjustment. The full 128-bit product is divided by the scale factor
+    /// with banker's rounding, and the quotient is truncated to `Int64` if it
+    /// overflows.
     ///
-    /// - Note: Unlike `&+` and `&-`, wrapping multiplication is actually
-    ///   slower than checked `*` in benchmarks. The `precondition` in `*`
-    ///   gives the optimizer proof that the result fits in `Int64`, enabling
-    ///   tighter code generation. Prefer `*` unless you specifically need
-    ///   non-trapping overflow behavior.
+    /// - Note: `&*` is no faster than checked `*` (the checks are predicted
+    ///   branches). Prefer `*` unless you specifically need non-trapping
+    ///   overflow behavior.
     ///
     /// - Important: If either operand is NaN, the result is undefined.
     ///   The caller is responsible for ensuring operands are valid.
@@ -59,9 +58,8 @@ extension FixedPointDecimal {
     /// - Returns: The wrapping product of `lhs` and `rhs`.
     @inlinable
     public static func &* (lhs: Self, rhs: Self) -> Self {
-        let wide = Int128(lhs._storage) * Int128(rhs._storage)
-        let scaled = _bankersDiv(wide, Int128(scaleFactor))
-        return Self(rawValue: Int64(truncatingIfNeeded: scaled))
+        let (magnitude, _) = _scaledProductMagnitude(lhs._storage, rhs._storage)
+        return Self(rawValue: _signed(magnitude, negative: (lhs._storage ^ rhs._storage) < 0))
     }
 }
 
@@ -115,8 +113,9 @@ extension FixedPointDecimal {
     /// Returns the product of this value and the given value, along with a Boolean
     /// indicating whether overflow occurred in the operation.
     ///
-    /// Uses `Int128` intermediate arithmetic. Overflow is reported when the scaled
-    /// result exceeds `Int64` range. Traps if either operand is NaN.
+    /// Computes the full 128-bit product, so no precision is lost. Overflow is
+    /// reported when the rounded result exceeds `Int64` range. Traps if either
+    /// operand is NaN.
     ///
     /// ```swift
     /// let a: FixedPointDecimal = "10.0"
@@ -131,11 +130,9 @@ extension FixedPointDecimal {
     @inlinable
     public func multipliedReportingOverflow(by other: Self) -> (partialValue: Self, overflow: Bool) {
         precondition(!isNaN && !other.isNaN, "NaN in FixedPointDecimal multiplication")
-        let wide = Int128(_storage) * Int128(other._storage)
-        let scaled = Self._bankersDiv(wide, Int128(Self.scaleFactor))
-        let fits = scaled > Int128(Int64.min) && scaled <= Int128(Int64.max)
-        let result = Int64(truncatingIfNeeded: scaled)
-        return (Self(rawValue: result), !fits || result == .min)
+        let (magnitude, overflow) = Self._scaledProductMagnitude(_storage, other._storage)
+        let result = Self._signed(magnitude, negative: (_storage ^ other._storage) < 0)
+        return (Self(rawValue: result), overflow || result == .min)
     }
 
     /// Returns the quotient of this value divided by the given value, along with
@@ -163,10 +160,12 @@ extension FixedPointDecimal {
         guard other._storage != 0 else {
             return (.zero, true)
         }
+        if let magnitude = Self._scaledQuotientMagnitude(_storage, other._storage) {
+            return (Self(rawValue: Self._signed(magnitude, negative: (_storage ^ other._storage) < 0)), false)
+        }
+        // Overflow (rare): compute the full quotient to report its truncated low 64 bits.
         let wide = Int128(_storage) * Int128(Self.scaleFactor)
         let result = Self._bankersDiv(wide, Int128(other._storage))
-        let fits = result > Int128(Int64.min) && result <= Int128(Int64.max)
-        let truncated = Int64(truncatingIfNeeded: result)
-        return (Self(rawValue: truncated), !fits || truncated == .min)
+        return (Self(rawValue: Int64(truncatingIfNeeded: result)), true)
     }
 }

@@ -182,6 +182,21 @@ struct PreconditionTests {
         }
     }
 
+    @Test("Multiplication traps when the result's magnitude is exactly 2⁶³")
+    func multiplicationOverflowAtTwoToTheSixtyThree() async {
+        // -2⁶² × 2.0 would be Int64.min, the NaN sentinel; it must trap, not return NaN.
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(rawValue: -(1 << 62)) * FixedPointDecimal(rawValue: 200_000_000)
+        }
+    }
+
+    @Test("Division traps when the result's magnitude is exactly 2⁶³")
+    func divisionOverflowAtTwoToTheSixtyThree() async {
+        await #expect(processExitsWith: .failure) {
+            _ = FixedPointDecimal(rawValue: 1 << 62) / FixedPointDecimal(rawValue: 50_000_000)
+        }
+    }
+
     @Test("Division by zero traps")
     func divisionByZero() async {
         await #expect(processExitsWith: .failure) {

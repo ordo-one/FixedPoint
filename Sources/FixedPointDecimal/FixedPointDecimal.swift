@@ -178,10 +178,14 @@ public struct FixedPointDecimal: Sendable, BitwiseCopyable {
             precondition(result != .min, "FixedPointDecimal(significand:exponent:) produced NaN sentinel")
             self._storage = result
         } else if shift < 0, -shift <= Self._maxPowerOf10Exponent {
-            // Negative shift: banker's rounding for sub-scale precision
-            let divisor = Self._powerOf10(-shift)
-            let result = Self._bankersDiv(Int128(sig), Int128(divisor))
-            self._storage = Int64(result)
+            // Negative shift: banker's rounding for sub-scale precision. An Int64 divided by a
+            // power of ten needs no 128-bit arithmetic: divide the magnitude, round half to even,
+            // then apply the sign. |result| ≤ |sig| / 10, so it cannot overflow.
+            let divisor = UInt64(Self._powerOf10(-shift))
+            let (quotient, remainder) = sig.magnitude.quotientAndRemainder(dividingBy: divisor)
+            let twiceRemainder = remainder &<< 1 // remainder < divisor ≤ 10¹⁸, so no overflow
+            let roundUp = twiceRemainder > divisor || (twiceRemainder == divisor && quotient & 1 != 0)
+            self._storage = Self._signed(roundUp ? quotient &+ 1 : quotient, negative: sig < 0)
         } else {
             preconditionFailure(
                 "FixedPointDecimal(significand: \(significand), exponent: \(exponent)): " +
